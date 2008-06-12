@@ -1,0 +1,31 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<link type="text/css" rel="stylesheet" href="/stylesheets/style.css" />
+       </head>
+       <div id="wrapper">
+       <div id="branding">
+       <H1>testapp</H1>
+  </div></div>
+  <body>
+  <div id="divider"></div>
+  <div id="navContent">
+  <div id="sideBarContentRight">
+  <H2>
+  Navigation
+  <br>
+  <ul><a href="/" title="Home">Home</a></ul>
+  <ul><a href="/recent" title="recent">Recent Transactions</a></ul>
+  <a href="{{ url }}">{{ url_linktext }}</a>
+  <ul><a href="mailto:tylers@voicebox.com" title="Author">Complaints</a></ul>
+  </H2>
+  </div>
+  </div>
+  <div id="mainContent">
+	<div id="sideBarContent">
+	{% block sideBarContent %}
+	{%  endblock %}
+</div></div>
+  </body>
+</html>

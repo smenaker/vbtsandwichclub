@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block sideBarContent %}
+<H2>
+Last 10 Transactions:
+	<br>
+{% for input in inputs %}
+    ${{input}}
+	<div id="divider"></div>
+{% endfor %}
+</H2>
+{% endblock %}
+

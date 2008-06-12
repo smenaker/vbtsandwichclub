@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block sideBarContent %}
+<H2>
+	<b>Change For: ${{ input }}</b>
+	<br>
+{% for value in collection.items%}
+	{{ value.1}}
+	{{ value.0}}
+	<div id="divider"></div>
+{% endfor %}
+</H2>
+{% endblock %}
+
