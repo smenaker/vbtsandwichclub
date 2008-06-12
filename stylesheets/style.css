@@ -1,0 +1,116 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font: 62.5%/1.6 "Courier";
+  background-color:#D4D4D4;
+}
+
+h1 {
+  font-size: 4em;
+  font-weight: normal;
+}
+
+h2 {
+  font-size: 2.0em;
+  font-weight: normal;
+}
+
+h3 {
+  font-size: 1.5em;
+  font-weight: normal;
+}
+
+p, li {
+  font-size: 1.4em;
+}
+
+h1, h2, p {
+  margin: 1em 0;
+}
+
+#branding {
+  height: 40px;
+  background-color:#67A9DE;
+  padding: 20px;
+}
+
+#branding h1 {
+  margin: 0;
+}
+
+#divider {
+  heigth: 1%;
+  background-color:#D4D4D4;
+  padding: 1%;
+}
+
+#mainContent {
+	width: 50%;
+  background-color:#F8F8FF;
+  padding: 1%;
+  float: left;
+  text-align: left;
+}
+
+#navContent {
+	width: 45%;
+  background-color:#F8F8FF;
+  padding: 1%;
+  float: right;
+  text-align: left;
+}
+
+#wrapper {
+  margin: 0 auto;
+  text-align: left;
+}
+
+#content {
+  width: 75%;
+  float: right;
+}
+
+#secondaryContent {
+  width: 31%;
+  min-width: 10em;
+  display: inline;
+  float: right;
+}
+#sideBarContent {
+  width: 90%;
+  background-color:#67A9DE;
+  padding: 1%;
+  float: left;
+  text-align: left;
+  border: 5px solid #F8F8FF;
+}
+
+#sideBarContentRight {
+  width: 90%;
+  background-color:#67A9DE;
+  padding: 1%;
+  float: right;
+  text-align: left;
+  border: 5px solid #F8F8FF;
+}
+
+#footer {
+  clear: both;
+}
+#mainNav, #secondaryContent {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+#mainNav *, #secondaryContent * {
+ padding-left: 20px;
+ padding-right: 20px;
+}
+
+#mainNav * *, #secondaryContent * * {
+ padding-left: 0;
+ padding-right: 0;
+}
