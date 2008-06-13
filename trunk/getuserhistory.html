@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block sideBarContent %}
+  <H3>Get your current balance and transaction history</H3>
+  <form action="/history" method="post">
+	  <div>Username:<input type="text" name="username" size=15/></div>
+	  <div>Password:<input type="password" name="password" size=15/></div>
+	  <br>
+	  <div><input type="submit" value="Get History"></div>
+  </form>
+{% endblock %}
