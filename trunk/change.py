@@ -156,26 +156,45 @@ class ManageUsers(webapp.RequestHandler):
 		'users':users
 		}
 		path = os.path.join(os.path.dirname(__file__), 'manageusers.html')
-        self.response.out.write(template.render(path,template_values))
+        #self.response.out.write(template.render(path,template_values))
 	def post(self):
 		username = self.request.get('username')
 		match = User.gql("WHERE username=:1 LIMIT 1",username)
 		if match:
 			template_values = {
-			'
+			'user':match[0]
+			}
+		else:
+			newuser = User(username=username,
+					       fullname='',
+						   password='password',
+						   monies=0)
+			newuser.put()
+			template_values = {
+			'user':newuser
+			}
+		path = os.path.join(os.path.dirname(__file__),'edituser.html')
+		self.response.out.write(template.render(path,template_values))
+
+class EditUser(webapp.RequestHandler):
+	"""Edit a user"""
+	def get(self):
+		print 'lolol'
+	def post(self):
+		print 'lolol'
 
 
 class EditItem(webapp.RequestHandler):
 	def post(self):
-		print 'lololol'
+		print 'lolol'
 
 def main():
     application = webapp.WSGIApplication([('/', MainPage),
                                         ('/submit_form', Change),
                                         ('/result', Result),
-                                        ('/recent', Recent)
-										('/manageusers',ManageUsers)
-										('/],
+                                        ('/recent', Recent),
+										('/manageusers',ManageUsers),
+										('/edituser',EditUser)],
 										#('/edititem',EditItem)],
                                         debug=True)
     wsgiref.handlers.CGIHandler().run(application)
