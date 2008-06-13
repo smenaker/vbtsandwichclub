@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block sideBarContent %}
+  <H3>HAIL</H3>
+  <form action="/submit_form" method="post">
+	  <div>Username   : {{ username }}</div>
+	  <div>Full Name  :<input type="text" name="fullname" value={{fullname}} size=15/></div>
+	  <div>Password   :<input type="password" name="password" value={{password}} size=15/></div>
+      <div>Set Amount :<input type="text" name="setamount" value={{amount}} size=15/></div>
+	  <div>Add Amount :<input type="text" name="addamount" value="0" size=15/></div>
+	  <div>
+	  <br>
+	  <div><input type="submit" value="Update"></div>
+  </form>
+{% endblock %}
+
