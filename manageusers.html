@@ -1,11 +1,27 @@
 {% extends "base.html" %}
 {% block sideBarContent %}
-  <H3>HAIL</H3>
-  <form action="/submit_form" method="post">
+  <H3>Manage Users</H3>
+  <form action="/manageusers" method="post">
 	  <div>Username :<input type="text" name="username" size=15/></div>
 	  <br>
-	  <div><input type="submit" value="Find"></div>
-	  <div id="divider"></div>
-	  <div>
-  </form>
+	  <div><input type="submit" value="Find"></div> 
+	  </form> 
+
+<div id="sideBarContent">
+	<table border="0" cellspacing="10">
+	<tr>
+		<th> Username </th>
+		<th> Full Name </th>
+		<th> Account </th>
+	</tr>
+	{% for user in users %}
+	<tr>
+		<td> {{user.username}} </td>
+		<td> {{user.fullname}} </td>
+		<td> ${{user.monies}} </td>
+	</tr>
+	{% endfor %}
+</table>
+
+  </div>
 {% endblock %}

@@ -21,13 +21,9 @@
   <ul><a href="mailto:kevinl@voicebox.com" title="Author">Report Bugs</a></ul>
   <ul><a href="mailto:tylers@voicebox.com" title="Kenny G">Request Smooth Jazz</a></ul>
   {% if admin %}
-  <ul>HELLO</ul>
+  <ul>Admin Stuff</ul>
+  <ul><a href="/manageusers" title="users">Manage Users</a></ul>
   {% endif %}
-  </H2>
-  <H2>
-  Prices
-  <br>
-  <ul>Sandwich : $2</ul>
   </H2>
   </div>
   </div>
@@ -35,6 +31,14 @@
 	<div id="sideBarContent">
 	{% block sideBarContent %}
 	{%  endblock %}
-</div></div>
+</div>
+	<div id="sideBarContent">
+	<H2>
+    Prices
+    <br>
+    <ul>Sandwich : $2</ul>
+    </H2>
+    </div>
+</div>
   </body>
 </html>

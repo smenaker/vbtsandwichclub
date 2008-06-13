@@ -1,4 +1,4 @@
-application: greedycoin
+application: voicebox-sandwich
 version: 1
 runtime: python
 api_version: 1
@@ -8,5 +8,5 @@ handlers:
   static_dir: stylesheets
 
 - url: /.*
-  script: change.py
+  script: vbsandwich.py
 
