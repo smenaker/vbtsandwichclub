@@ -17,7 +17,7 @@ class User(db.Model):
     monies = db.FloatProperty(required=True)
 
 class Transaction(db.Model):
-    buyer = db.UserProperty(required=True)
+    buyer = db.StringProperty(required=True)
     date = db.DateTimeProperty(auto_now_add=True)
     items = db.StringListProperty()
     other = db.FloatProperty()
@@ -26,18 +26,6 @@ class Transaction(db.Model):
 class Item(db.Model):
     name = db.StringProperty(required=True)
     price = db.FloatProperty()
-
-def UpdateUser(username,newname=None,newpw=None,newauthority=None):
-    """Update a user in the database"""
-    users = db.GqlQuery("SELECT * FROM User WHERE username = :1",username)
-    for user in users:
-        if newname:
-            user.fullname=newname
-        if newpw:
-            user.password=newpw
-        if newauthority:
-            user.authority=newauthority
-    db.put(users)
 
 def UpdateItem(name,newname=None,newprice=None):
     """Update an item in the database"""
@@ -98,129 +86,151 @@ class Recent(webapp.RequestHandler):
         path = os.path.join(os.path.dirname(__file__), 'query.html')
         self.response.out.write(template.render(path,template_values))
 
-class Result(webapp.RequestHandler):
-    """Returns Page with Results"""
-    def __init__(self):
-        self.coins = [1,5,10,25]
-        self.coin_lookup = {25: "quarters", 10: "dimes", 5: "nickels", 1: "pennies"}
+class History(webapp.RequestHandler):
 
     def get(self):
-        #Just grab the latest post
-        collection = {}
-
-        #select the latest input from the datastore
-        change = db.GqlQuery("SELECT * FROM ChangeModel ORDER BY date DESC LIMIT 1")
-        for c in change:
-            change_input = c.input
-
-        #coin change logic
-        coin = self.coins.pop()
-        num, rem  = divmod(change_input, coin)
-        if num:
-            collection[self.coin_lookup[coin]] = num
-        while rem > 0:
-            coin = self.coins.pop()
-            num, rem = divmod(rem, coin)
-            if num:
-                collection[self.coin_lookup[coin]] = num
+        path = os.path.join(os.path.dirname(__file__), 'getuserhistory.html')
+        self.response.out.write(template.render(path, None))
+    def post(self):
+        username = self.request.get('username')
+        password = self.request.get('password')
+        matchingusers = User.gql("WHERE username=:1",username)
+        if matchingusers.count() == 0:
+			template_values = {
+			'message':'Username not found'
+			}
+			path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+			self.response.out.write(template.render(path,template_values))
+        elif password != matchingusers[0].password:
+			template_values = {
+			'message':'Incorrect password'
+		    }
+			path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+			self.response.out.write(template.render(path,template_values))
+        else:
+            self.GetUserHistory(matchingusers[0])
+    def GetUserHistory(self,user):
+        transactions = Transaction.gql("WHERE buyer=:1",user.username)
 
         template_values = {
-        'collection': collection,
-        'input': decimal.Decimal(change_input)/100,
+        'username':user.username,
+        'balance':repr(user.monies)[:18],
+        'transactions':transactions
         }
-
-        #render template
-        path = os.path.join(os.path.dirname(__file__), 'result.html')
+        path = os.path.join(os.path.dirname(__file__), 'history.html')
         self.response.out.write(template.render(path, template_values))
+
 
 class Pay(webapp.RequestHandler):
 
     def post(self):
-        """Printing Method For Recursive Results and While Results"""
-        model = ChangeModel()
         try:
-            change_input = decimal.Decimal(self.request.get('content'))
-            model.input = int(change_input*100)
-            model.put()
-            self.redirect('/result')
-        except decimal.InvalidOperation:
-            path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
-            self.response.out.write(template.render(path,None))
+            payment = float(self.request.get('payment'))
+            username = self.request.get('username')
+            matchingusers = User.gql("WHERE username=:1",username)
+            password = self.request.get('password')
+            if payment < 0:
+				template_values = {
+				'message':'Please enter a non-negative transaction'
+			    }
+				path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+				self.response.out.write(template.render(path,template_values))
+            elif matchingusers.count() == 0:
+				template_values = {
+				'message':'Username not found'
+			    }
+				path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+				self.response.out.write(template.render(path,template_values))
+            elif password != matchingusers[0].password:
+				template_values = {
+				'message':'Incorrect password'
+			    }
+				path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+				self.response.out.write(template.render(path,template_values))
+            newtransaction = Transaction(buyer=username,other=payment,total=payment)
+            if payment:
+                newtransaction.put()
+                matchingusers[0].monies -= payment
+                matchingusers[0].put()
+            #History.GetUserHistory(History(),matchingusers[0])
+        except ValueError:
+            ErrorHandler.write_error('Please enter a floating point value in the amount fields.')
 
 class ManageUsers(webapp.RequestHandler):
-	"""Find a user to edit"""
-	def get(self):
-		current_user = users.get_current_user()
-		if current_user and users.is_current_user_admin():
-			userquery = User.all()
-			template_values = {
-			'users':userquery
-			}
-			path = os.path.join(os.path.dirname(__file__), 'manageusers.html')
-			self.response.out.write(template.render(path,template_values))
-		else:
-			self.redirect('/')
-	def post(self):
-		username = self.request.get('username')
-		match = User.gql("WHERE username=:1 LIMIT 1",username)
-		if match.get():
-			template_values = {
-			'user':match[0]
-			}
-		else:
-			newuser = User(username=username,
-					       fullname=username,
-						   password='password',
-						   monies=0.0)
-			newuser.put()
-			template_values = {
-			'user':newuser
-			}
-		path = os.path.join(os.path.dirname(__file__),'edituser.html')
-		self.response.out.write(template.render(path,template_values))
+    """Find a user to edit"""
+    def get(self):
+        current_user = users.get_current_user()
+        if current_user and users.is_current_user_admin():
+            userquery = User.all()
+            template_values = {
+            'users':userquery
+            }
+            path = os.path.join(os.path.dirname(__file__), 'manageusers.html')
+            self.response.out.write(template.render(path,template_values))
+        else:
+            self.redirect('/')
+    def post(self):
+        username = self.request.get('username')
+        match = User.gql("WHERE username=:1 LIMIT 1",username)
+        if match.get():
+            template_values = {
+            'user':match[0]
+            }
+        else:
+            newuser = User(username=username,
+                           fullname=username,
+                           password='password',
+                           monies=0.0)
+            newuser.put()
+            template_values = {
+            'user':newuser
+            }
+        path = os.path.join(os.path.dirname(__file__),'edituser.html')
+        self.response.out.write(template.render(path,template_values))
 
 class EditUser(webapp.RequestHandler):
-	"""Edit a user"""
-	def post(self):
-		current_user = users.get_current_user()
-		if current_user and users.is_current_user_admin():
-			remove = self.request.get('remove')
-			username = self.request.get('username')
-			matching=User.gql("WHERE username=:1",username)
-			firstmatch = matching[0]
-			if remove:	
-				firstmatch.delete()
-				self.redirect('/manageusers')
-			else:
-				try:
-					fullname = self.request.get('fullname')
-					password = self.request.get('password')
-					setamount = float(self.request.get('setamount'))
-					addamount = abs(float(self.request.get('addamount')))
-					
-					firstmatch.fullname = fullname
-					firstmatch.password = password
-					firstmatch.monies = setamount
-					firstmatch.monies += addamount
+    """Edit a user"""
+    def post(self):
+        current_user = users.get_current_user()
+        if current_user and users.is_current_user_admin():
+            remove = self.request.get('remove')
+            username = self.request.get('username')
+            matching=User.gql("WHERE username=:1",username)
+            firstmatch = matching[0]
+            if remove:  
+                firstmatch.delete()
+                self.redirect('/manageusers')
+            else:
+                try:
+                    fullname = self.request.get('fullname')
+                    password = self.request.get('password')
+                    setamount = float(self.request.get('setamount'))
+                    addamount = abs(float(self.request.get('addamount')))
+                    
+                    firstmatch.fullname = fullname
+                    firstmatch.password = password
+                    firstmatch.monies = setamount
+                    firstmatch.monies += addamount
 
-					firstmatch.put()
-					
-					self.redirect('/manageusers')
-				except ValueError:
+                    firstmatch.put()
+                    
+                    self.redirect('/manageusers')
+                except ValueError:
 					template_values = {
 					'message':'Please enter a floating point value in the amount fields.'
-					}
+				    }
 					path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
 					self.response.out.write(template.render(path,template_values))
-		else:
-			self.redirect('/')
+        else:
+            self.redirect('/')
+
 
 def main():
     application = webapp.WSGIApplication([('/', MainPage),
-                                        ('/submit_form', Pay),
-                                        ('/result', Result),
+                                        ('/pay', Pay),
+                                        ('/history', History),
                                         ('/recent', Recent),
-										('/manageusers',ManageUsers),
-										('/edituser',EditUser)],
+                                        ('/manageusers',ManageUsers),
+                                        ('/edituser',EditUser)],
                                         debug=True)
     wsgiref.handlers.CGIHandler().run(application)

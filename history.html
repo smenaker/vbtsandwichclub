@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block sideBarContent %}
+<H3>History for {{ username }}</H3>
+<div>Account balance: {{ balance }}</div>
+<br>
+<table border="0" cellspacing="10">
+	<tr>
+		<th> Date </th>
+		<th> Amount </th>
+	</tr>
+	{% for transaction in transactions %}
+	<tr>
+		<td> {{transaction.date}} </td>
+		<td> ${{transaction.total}} </td>
+	</tr>
+	{% endfor %}
+</table>
+  <form action="/history" method="post">
+	  <div>Username:<input type="text" name="username" size=15/></div>
+	  <div>Password:<input type="password" name="password" size=15/></div>
+	  <br>
+	  <div><input type="submit" value="Get History"></div>
+  </form>
+{% endblock %}
