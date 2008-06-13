@@ -96,25 +96,25 @@ class History(webapp.RequestHandler):
         password = self.request.get('password')
         matchingusers = User.gql("WHERE username=:1",username)
         if matchingusers.count() == 0:
-			template_values = {
-			'message':'Username not found'
-			}
-			path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
-			self.response.out.write(template.render(path,template_values))
+            template_values = {
+            'message':'Username not found'
+            }
+            path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+            self.response.out.write(template.render(path,template_values))
         elif password != matchingusers[0].password:
-			template_values = {
-			'message':'Incorrect password'
-		    }
-			path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
-			self.response.out.write(template.render(path,template_values))
+            template_values = {
+            'message':'Incorrect password'
+            }
+            path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+            self.response.out.write(template.render(path,template_values))
         else:
             self.GetUserHistory(matchingusers[0])
     def GetUserHistory(self,user):
-        transactions = Transaction.gql("WHERE buyer=:1",user.username)
+        transactions = Transaction.gql("WHERE buyer=:1 ORDER BY date DESC",user.username)
 
         template_values = {
         'username':user.username,
-        'balance':repr(user.monies)[:18],
+        'balance':user.monies,
         'transactions':transactions
         }
         path = os.path.join(os.path.dirname(__file__), 'history.html')
@@ -130,28 +130,30 @@ class Pay(webapp.RequestHandler):
             matchingusers = User.gql("WHERE username=:1",username)
             password = self.request.get('password')
             if payment < 0:
-				template_values = {
-				'message':'Please enter a non-negative transaction'
-			    }
-				path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
-				self.response.out.write(template.render(path,template_values))
+                template_values = {
+                'message':'Please enter a non-negative transaction'
+                }
+                path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+                self.response.out.write(template.render(path,template_values))
             elif matchingusers.count() == 0:
-				template_values = {
-				'message':'Username not found'
-			    }
-				path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
-				self.response.out.write(template.render(path,template_values))
+                template_values = {
+                'message':'Username not found'
+                }
+                path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+                self.response.out.write(template.render(path,template_values))
             elif password != matchingusers[0].password:
-				template_values = {
-				'message':'Incorrect password'
-			    }
-				path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
-				self.response.out.write(template.render(path,template_values))
+                template_values = {
+                'message':'Incorrect password'
+                }
+                path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+                self.response.out.write(template.render(path,template_values))
             newtransaction = Transaction(buyer=username,other=payment,total=payment)
             if payment:
                 newtransaction.put()
-                matchingusers[0].monies -= payment
-                matchingusers[0].put()
+                for user in matchingusers:
+                    user.monies -= payment
+                    user.put()
+            self.redirect('/')
             #History.GetUserHistory(History(),matchingusers[0])
         except ValueError:
             ErrorHandler.write_error('Please enter a floating point value in the amount fields.')
@@ -216,11 +218,11 @@ class EditUser(webapp.RequestHandler):
                     
                     self.redirect('/manageusers')
                 except ValueError:
-					template_values = {
-					'message':'Please enter a floating point value in the amount fields.'
-				    }
-					path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
-					self.response.out.write(template.render(path,template_values))
+                    template_values = {
+                    'message':'Please enter a floating point value in the amount fields.'
+                    }
+                    path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+                    self.response.out.write(template.render(path,template_values))
         else:
             self.redirect('/')
 
