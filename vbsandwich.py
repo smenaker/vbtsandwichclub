@@ -64,27 +64,24 @@ class MainPage(webapp.RequestHandler):
         self.response.out.write(template.render(path, template_values))
 
 class Recent(webapp.RequestHandler):
-    """Query Last 10 Requests"""
-
     def get(self):
-
-        #collection
-        collection = []
-        #grab last 10 records from datastore
-        query = ChangeModel.all().order('-date')
-        records = query.fetch(limit=10)
-
-        #formats decimal correctly
-        for change in records:
-            collection.append(decimal.Decimal(change.input)/100)
-
+        transactions = Transaction.gql("ORDER BY date DESC LIMIT 1")
+        recentuser=''
+        for transaction in transactions:
+            recentuser = transaction.buyer
+        recentuser_fetch = User.gql("WHERE username=:1 LIMIT 1",recentuser)
+        recentuser_model = None
+        for usermodel in recentuser_fetch:
+            recentuser_model = usermodel
+        
+        recentuser_transactions = Transaction.gql("WHERE buyer=:1 ORDER BY date DESC",recentuser_model.username)
         template_values = {
-        'inputs': collection,
-        'records': records,
+        'username':recentuser_model.username,
+        'balance':recentuser_model.monies,
+        'transactions':recentuser_transactions
         }
-
-        path = os.path.join(os.path.dirname(__file__), 'query.html')
-        self.response.out.write(template.render(path,template_values))
+        path = os.path.join(os.path.dirname(__file__), 'history.html')
+        self.response.out.write(template.render(path, template_values))
 
 class History(webapp.RequestHandler):
 
@@ -135,28 +132,35 @@ class Pay(webapp.RequestHandler):
                 }
                 path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
                 self.response.out.write(template.render(path,template_values))
+                return
             elif matchingusers.count() == 0:
                 template_values = {
                 'message':'Username not found'
                 }
                 path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
                 self.response.out.write(template.render(path,template_values))
+                return
             elif password != matchingusers[0].password:
                 template_values = {
                 'message':'Incorrect password'
                 }
                 path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
                 self.response.out.write(template.render(path,template_values))
+                return
             newtransaction = Transaction(buyer=username,other=payment,total=payment)
             if payment:
                 newtransaction.put()
                 for user in matchingusers:
                     user.monies -= payment
                     user.put()
-            self.redirect('/')
+            self.redirect('/recent')
             #History.GetUserHistory(History(),matchingusers[0])
         except ValueError:
-            ErrorHandler.write_error('Please enter a floating point value in the amount fields.')
+            template_values = {
+            'message':'Please enter a floating point value in the amount fields.'
+            }
+            path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+            self.response.out.write(template.render(path,template_values))
 
 class ManageUsers(webapp.RequestHandler):
     """Find a user to edit"""
