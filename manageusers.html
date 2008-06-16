@@ -2,11 +2,17 @@
 {% block sideBarContent %}
   <H3>Manage Users</H3>
   <form action="/manageusers" method="post">
+	  <H3>Find User</H3>
 	  <div>Username :<input type="text" name="username" size=15/></div>
 	  <br>
 	  <div><input type="submit" value="Find"></div> 
-	  </form> 
-
+  </form> 
+  <form action="/createuser" method="post">
+	  <H3>Create User</H3>
+	  <div>Username :<input type="text" name="username" size=15/></div>
+	  <br>
+	  <div><input type="submit" value="Create"></div>
+  </form>
 <div id="sideBarContent">
 	<table border="0" cellspacing="10">
 	<tr>
