@@ -25,7 +25,7 @@ class Transaction(db.Model):
     
 class Item(db.Model):
     name = db.StringProperty(required=True)
-	category = db.StringProperty()
+    category = db.StringProperty()
     price = db.FloatProperty()
 
 class MainPage(webapp.RequestHandler):
