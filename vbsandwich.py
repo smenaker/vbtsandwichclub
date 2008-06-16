@@ -66,7 +66,10 @@ class CreateUser(webapp.RequestHandler):
     def post(self):
         username = self.request.get('username')
         match = User.gql("WHERE username=:1 LIMIT 1",username)
-        if match.get():
+        usermatch = None
+        for user in match:
+            usermatch = user
+        if usermatch:
             template_values = {
             'message':'Username %s already exists'%username,
             'admin':True if users.is_current_user_admin() else False
@@ -214,9 +217,12 @@ class ManageUsers(webapp.RequestHandler):
     def post(self):
         username = self.request.get('username')
         match = User.gql("WHERE username=:1 LIMIT 1",username)
-        if match.get():
+        usermatch = None
+        for user in match:
+            usermatch = user
+        if usermatch:
             template_values = {
-            'user':match[0],
+            'user':usermatch,
             'admin':True if users.is_current_user_admin() else False
             }
             path = os.path.join(os.path.dirname(__file__),'edituser.html')
@@ -308,7 +314,7 @@ def main():
                                         ('/createuser',CreateUser),
                                         ('/history', History),
                                         ('/recent', Recent),
-										('/deposit',Deposit),
+                                        ('/deposit',Deposit),
                                         ('/manageusers',ManageUsers),
                                         ('/edituser',EditUser)],
                                         debug=True)
