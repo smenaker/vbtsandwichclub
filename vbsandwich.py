@@ -25,20 +25,8 @@ class Transaction(db.Model):
     
 class Item(db.Model):
     name = db.StringProperty(required=True)
+	category = db.StringProperty()
     price = db.FloatProperty()
-
-def UpdateItem(name,newname=None,newprice=None):
-    """Update an item in the database"""
-    items = db.GqlQuery("SELECT * FROM Item WHERE name = :1",name)
-    for item in items:
-        if newname:
-            item.name=newname
-        if newprice:
-            item.price=newprice
-class ChangeModel(db.Model):
-    user = db.UserProperty()
-    input = db.IntegerProperty()
-    date = db.DateTimeProperty(auto_now_add=True)
 
 class MainPage(webapp.RequestHandler):
     """Main Page View"""
