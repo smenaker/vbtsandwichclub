@@ -8,9 +8,15 @@
       <div>Set Amount :<input type="text" name="setamount" value={{ user.monies }} size=15/></div>
 	  <div>Add Amount :<input type="text" name="addamount" value="0" size=15/></div>
 	  <div>Remove User:<input type="checkbox" name="remove"></div>
-	  <div>
 	  <br>
 	  <div><input type="submit" value="Update"></div>
+  </form>
+  <H3>Make a deposit</H3>
+  <form action="/deposit" method="post">
+	  <div>Username   :<input type=text name="username" value={{ user.username }} readonly> </div> 
+	  <div>Add Amount :<input type="text" name="addamount" value="0" size=15/></div>
+	  <br>
+	  <div><input type="submit" value="Deposit"></div>
   </form>
 {% endblock %}
 

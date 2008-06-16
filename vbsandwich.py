@@ -181,7 +181,7 @@ class Pay(webapp.RequestHandler):
                 path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
                 self.response.out.write(template.render(path,template_values))
                 return
-            newtransaction = Transaction(buyer=username,other=payment,total=payment)
+            newtransaction = Transaction(buyer=username,other=payment,total=-payment)
             if payment:
                 newtransaction.put()
                 for user in matchingusers:
@@ -227,7 +227,41 @@ class ManageUsers(webapp.RequestHandler):
             'admin':True if users.is_current_user_admin() else False
             }
             path = os.path.join(os.path.dirname(__file__),'submit_error.html')
-            self.response.out.write(template.render(path,template_values)) 
+            self.response.out.write(template.render(path,template_values))
+
+class Deposit(webapp.RequestHandler):
+    def post(self):
+        if users.is_current_user_admin():
+            username = self.request.get('username')
+            matching = User.gql("WHERE username=:1",username)
+            firstmatch = matching[0]
+            try:
+                deposit = float(self.request.get('addamount'))
+            except ValueError:
+                template_values = {
+                'message':'Please enter a floating point value',
+                'admin':True if users.is_current_user_admin() else False
+                }
+                path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+                self.response.out.write(template.render(path,template_values))
+                return
+            if deposit < 0:
+                template_values = {
+                'message':'Please enter a non-negative value',
+                'admin':True if users.is_current_user_admin() else False
+                }
+                path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+                self.response.out.write(template.render(path,template_values))
+                return
+            firstmatch.monies += deposit
+            firstmatch.put()
+            newdeposit = Transaction(buyer=username,total=deposit)
+            newdeposit.put()
+            self.redirect('/recent')
+            return
+        else:
+            self.redirect('/')
+
 
 class EditUser(webapp.RequestHandler):
     """Edit a user"""
@@ -236,26 +270,26 @@ class EditUser(webapp.RequestHandler):
         if current_user and users.is_current_user_admin():
             remove = self.request.get('remove')
             username = self.request.get('username')
-            matching=User.gql("WHERE username=:1",username)
+            matching = User.gql("WHERE username=:1",username)
             firstmatch = matching[0]
             if remove:  
                 firstmatch.delete()
                 self.redirect('/manageusers')
+                return
             else:
                 try:
                     fullname = self.request.get('fullname')
                     password = self.request.get('password')
                     setamount = float(self.request.get('setamount'))
-                    addamount = abs(float(self.request.get('addamount')))
                     
                     firstmatch.fullname = fullname
                     firstmatch.password = password
                     firstmatch.monies = setamount
-                    firstmatch.monies += addamount
 
                     firstmatch.put()
                     
                     self.redirect('/manageusers')
+                    return
                 except ValueError:
                     template_values = {
                     'message':'Please enter a floating point value in the amount fields.',
@@ -263,6 +297,7 @@ class EditUser(webapp.RequestHandler):
                     }
                     path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
                     self.response.out.write(template.render(path,template_values))
+                    return
         else:
             self.redirect('/')
 
@@ -273,6 +308,7 @@ def main():
                                         ('/createuser',CreateUser),
                                         ('/history', History),
                                         ('/recent', Recent),
+										('/deposit',Deposit),
                                         ('/manageusers',ManageUsers),
                                         ('/edituser',EditUser)],
                                         debug=True)
