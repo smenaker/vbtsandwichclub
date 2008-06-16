@@ -307,11 +307,85 @@ class EditUser(webapp.RequestHandler):
         else:
             self.redirect('/')
 
+class ViewUserHistory(webapp.RequestHandler):
+    def post(self):
+        username = self.request.get('username')
+        matchingusers = User.gql("WHERE username=:1",username)
+        if matchingusers.count() == 0:
+            template_values = {
+            'message':'Username not found',
+            'admin':True if users.is_current_user_admin() else False
+            }
+            path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
+            self.response.out.write(template.render(path,template_values))
+        else:
+            self.GetUserHistory(matchingusers[0])
+    def GetUserHistory(self,user):
+        transactions = Transaction.gql("WHERE buyer=:1 ORDER BY date DESC",user.username)
+
+        template_values = {
+        'username':user.username,
+        'balance':user.monies,
+        'transactions':transactions,
+        'admin':True if users.is_current_user_admin() else False
+        }
+        path = os.path.join(os.path.dirname(__file__), 'history.html')
+        self.response.out.write(template.render(path, template_values))
+class ChangePassword(webapp.RequestHandler):
+    def get(self):
+        path = os.path.join(os.path.dirname(__file__),'changepassword.html')
+        self.response.out.write(template.render(path,None))
+    def post(self):
+        username = self.request.get('username')
+        oldpassword = self.request.get('oldpassword')
+        newpassword1 = self.request.get('newpassword1')
+        newpassword2 = self.request.get('newpassword2')
+
+        matchingusers = User.gql("WHERE username=:1 LIMIT 1",username)
+        if matchingusers.count() == 0:
+            template_values = {
+            'message':'Username not found',
+            'admin':True if users.is_current_user_admin() else False
+            }
+            path = os.path.join(os.path.dirname(__file__),'submit_error.html')
+            self.response.out.write(template.render(path,template_values))
+            return
+        user = None
+        for u in matchingusers:
+            user = u
+        if oldpassword != user.password:
+            template_values = {
+            'message':'Incorrect password',
+            'admin':True if users.is_current_user_admin() else False
+            }
+            path = os.path.join(os.path.dirname(__file__),'submit_error.html')
+            self.response.out.write(template.render(path,template_values))
+            return
+        if newpassword1 != newpassword2:
+            template_values = {
+            'message':'New passwords do not match',
+            'admin':True if users.is_current_user_admin() else False
+            }
+            path = os.path.join(os.path.dirname(__file__),'submit_error.html')
+            self.response.out.write(template.render(path,template_values))
+            return
+        user.password = newpassword1
+        user.put()
+        template_values = {
+        'message':'Password changed',
+        'admin':True if users.is_current_user_admin() else False
+        }
+        path = os.path.join(os.path.dirname(__file__),'submit_success.html')
+        self.response.out.write(template.render(path,template_values))
+
+
 
 def main():
     application = webapp.WSGIApplication([('/', MainPage),
                                         ('/pay', Pay),
                                         ('/createuser',CreateUser),
+                                        ('/viewuserhistory',ViewUserHistory),
+                                        ('/changepassword',ChangePassword),
                                         ('/history', History),
                                         ('/recent', Recent),
                                         ('/deposit',Deposit),

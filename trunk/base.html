@@ -12,12 +12,12 @@
   <div id="divider"></div>
   <div id="navContent">
   <div id="sideBarContentRight">
-  <H2>
-  Navigation
+  <H2>Navigation
   <br>
   <ul><a href="/" title="Home">Home</a></ul>
   <ul><a href="/history" title="history">Transaction History</a></ul>
-  <a href="{{ url }}">{{ url_linktext }}</a>
+  <ul><a href="/changepassword" title="changepassword">Change Password</a></ul>
+  <a href="{{ url }}">{{ url_linktext }} (for admin purposes only)</a>
   <ul><a href="mailto:kevinl@voicebox.com" title="Author">Report Bugs</a></ul>
   <ul><a href="mailto:tylers@voicebox.com" title="Kenny G">Request Smooth Jazz</a></ul>
   {% if admin %}
@@ -33,11 +33,26 @@
 	{%  endblock %}
 </div>
 	<div id="sideBarContent">
-	<H2>
-    Prices
-    <br>
-    <ul>Sandwich : $2</ul>
-    </H2>
+	<H2>Prices</H2>
+	<br>
+	<table border="0" cellspacing="10">
+	<tr>
+		<th> Item </th>
+		<th> Price </th>
+	</tr>
+	<tr>
+		<td> Sandwich : </td>
+		<td> $2.00 </td>
+	</tr>
+	<tr>
+		<td> Sandwich : </td>
+		<td> $2.00 </td>
+	</tr>
+	<tr>
+		<td> Sandwich : </td>
+		<td> $2.00 </td>
+	</tr>
+	</table>
     </div>
 </div>
   </body>
