@@ -62,6 +62,30 @@ class MainPage(webapp.RequestHandler):
         }
         path = os.path.join(os.path.dirname(__file__), 'index.html')
         self.response.out.write(template.render(path, template_values))
+class CreateUser(webapp.RequestHandler):
+    def post(self):
+        username = self.request.get('username')
+        match = User.gql("WHERE username=:1 LIMIT 1",username)
+        if match.get():
+            template_values = {
+            'message':'Username %s already exists'%username,
+            'admin':True if users.is_current_user_admin() else False
+            }
+            path = os.path.join(os.path.dirname(__file__),'submit_error.html')
+            self.response.out.write(template.render(path,template_values))
+            return
+        else:
+            newuser = User(username=username,
+                           fullname=username,
+                           password='password',
+                           monies=0.0)
+            newuser.put()
+            template_values = {
+            'user':newuser,
+            'admin':True if users.is_current_user_admin() else False
+            }
+            path = os.path.join(os.path.dirname(__file__),'edituser.html')
+            self.response.out.write(template.render(path,template_values))
 
 class Recent(webapp.RequestHandler):
     def get(self):
@@ -78,7 +102,8 @@ class Recent(webapp.RequestHandler):
         template_values = {
         'username':recentuser_model.username,
         'balance':recentuser_model.monies,
-        'transactions':recentuser_transactions
+        'transactions':recentuser_transactions,
+        'admin':True if users.is_current_user_admin() else False
         }
         path = os.path.join(os.path.dirname(__file__), 'history.html')
         self.response.out.write(template.render(path, template_values))
@@ -87,20 +112,25 @@ class History(webapp.RequestHandler):
 
     def get(self):
         path = os.path.join(os.path.dirname(__file__), 'getuserhistory.html')
-        self.response.out.write(template.render(path, None))
+        template_values = {
+        'admin':True if users.is_current_user_admin() else False
+        }
+        self.response.out.write(template.render(path, template_values))
     def post(self):
         username = self.request.get('username')
         password = self.request.get('password')
         matchingusers = User.gql("WHERE username=:1",username)
         if matchingusers.count() == 0:
             template_values = {
-            'message':'Username not found'
+            'message':'Username not found',
+            'admin':True if users.is_current_user_admin() else False
             }
             path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
             self.response.out.write(template.render(path,template_values))
         elif password != matchingusers[0].password:
             template_values = {
-            'message':'Incorrect password'
+            'message':'Incorrect password',
+            'admin':True if users.is_current_user_admin() else False
             }
             path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
             self.response.out.write(template.render(path,template_values))
@@ -112,7 +142,8 @@ class History(webapp.RequestHandler):
         template_values = {
         'username':user.username,
         'balance':user.monies,
-        'transactions':transactions
+        'transactions':transactions,
+        'admin':True if users.is_current_user_admin() else False
         }
         path = os.path.join(os.path.dirname(__file__), 'history.html')
         self.response.out.write(template.render(path, template_values))
@@ -128,21 +159,24 @@ class Pay(webapp.RequestHandler):
             password = self.request.get('password')
             if payment < 0:
                 template_values = {
-                'message':'Please enter a non-negative transaction'
+                'message':'Please enter a non-negative transaction',
+                'admin':True if users.is_current_user_admin() else False
                 }
                 path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
                 self.response.out.write(template.render(path,template_values))
                 return
             elif matchingusers.count() == 0:
                 template_values = {
-                'message':'Username not found'
+                'message':'Username not found',
+                'admin':True if users.is_current_user_admin() else False
                 }
                 path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
                 self.response.out.write(template.render(path,template_values))
                 return
             elif password != matchingusers[0].password:
                 template_values = {
-                'message':'Incorrect password'
+                'message':'Incorrect password',
+                'admin':True if users.is_current_user_admin() else False
                 }
                 path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
                 self.response.out.write(template.render(path,template_values))
@@ -157,7 +191,8 @@ class Pay(webapp.RequestHandler):
             #History.GetUserHistory(History(),matchingusers[0])
         except ValueError:
             template_values = {
-            'message':'Please enter a floating point value in the amount fields.'
+            'message':'Please enter a floating point value in the amount fields.',
+            'admin':True if users.is_current_user_admin() else False
             }
             path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
             self.response.out.write(template.render(path,template_values))
@@ -169,7 +204,8 @@ class ManageUsers(webapp.RequestHandler):
         if current_user and users.is_current_user_admin():
             userquery = User.all()
             template_values = {
-            'users':userquery
+            'users':userquery,
+            'admin':True if users.is_current_user_admin() else False
             }
             path = os.path.join(os.path.dirname(__file__), 'manageusers.html')
             self.response.out.write(template.render(path,template_values))
@@ -180,19 +216,18 @@ class ManageUsers(webapp.RequestHandler):
         match = User.gql("WHERE username=:1 LIMIT 1",username)
         if match.get():
             template_values = {
-            'user':match[0]
+            'user':match[0],
+            'admin':True if users.is_current_user_admin() else False
             }
+            path = os.path.join(os.path.dirname(__file__),'edituser.html')
+            self.response.out.write(template.render(path,template_values))
         else:
-            newuser = User(username=username,
-                           fullname=username,
-                           password='password',
-                           monies=0.0)
-            newuser.put()
             template_values = {
-            'user':newuser
+            'message':'Username %s does not exist yet'%username,
+            'admin':True if users.is_current_user_admin() else False
             }
-        path = os.path.join(os.path.dirname(__file__),'edituser.html')
-        self.response.out.write(template.render(path,template_values))
+            path = os.path.join(os.path.dirname(__file__),'submit_error.html')
+            self.response.out.write(template.render(path,template_values)) 
 
 class EditUser(webapp.RequestHandler):
     """Edit a user"""
@@ -223,7 +258,8 @@ class EditUser(webapp.RequestHandler):
                     self.redirect('/manageusers')
                 except ValueError:
                     template_values = {
-                    'message':'Please enter a floating point value in the amount fields.'
+                    'message':'Please enter a floating point value in the amount fields.',
+                    'admin':True if users.is_current_user_admin() else False
                     }
                     path = os.path.join(os.path.dirname(__file__), 'submit_error.html')
                     self.response.out.write(template.render(path,template_values))
@@ -234,6 +270,7 @@ class EditUser(webapp.RequestHandler):
 def main():
     application = webapp.WSGIApplication([('/', MainPage),
                                         ('/pay', Pay),
+                                        ('/createuser',CreateUser),
                                         ('/history', History),
                                         ('/recent', Recent),
                                         ('/manageusers',ManageUsers),

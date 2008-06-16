@@ -22,14 +22,14 @@ indexes:
   - name: date
     direction: desc
 
-# Used 7 times in query history.
+# Used once in query history.
 - kind: Transaction
   properties:
   - name: buyer
   - name: date
     direction: desc
 
-# Used 4 times in query history.
+# Used once in query history.
 - kind: Transaction
   properties:
   - name: date
