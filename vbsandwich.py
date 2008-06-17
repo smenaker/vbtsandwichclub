@@ -321,8 +321,11 @@ class ViewUserHistory(webapp.RequestHandler):
         self.response.out.write(template.render(path, template_values))
 class ChangePassword(webapp.RequestHandler):
     def get(self):
+        template_values = {
+        'admin':True if users.is_current_user_admin() else False
+        }
         path = os.path.join(os.path.dirname(__file__),'changepassword.html')
-        self.response.out.write(template.render(path,None))
+        self.response.out.write(template.render(path,template_values))
     def post(self):
         username = self.request.get('username')
         oldpassword = self.request.get('oldpassword')
@@ -367,18 +370,18 @@ class ChangePassword(webapp.RequestHandler):
         self.response.out.write(template.render(path,template_values))
 
 class About(webapp.RequestHandler):
-	def get(self):
-		template_values = {
-		'admin':True if users.is_current_user_admin() else False
-		}
-		path = os.path.join(os.path.dirname(__file__),'about.html')
-		self.response.out.write(template.render(path,template_values))
+    def get(self):
+        template_values = {
+        'admin':True if users.is_current_user_admin() else False
+        }
+        path = os.path.join(os.path.dirname(__file__),'about.html')
+        self.response.out.write(template.render(path,template_values))
 
 
 def main():
     application = webapp.WSGIApplication([('/', MainPage),
                                         ('/pay', Pay),
-										('/about',About),
+                                        ('/about',About),
                                         ('/createuser',CreateUser),
                                         ('/viewuserhistory',ViewUserHistory),
                                         ('/changepassword',ChangePassword),
