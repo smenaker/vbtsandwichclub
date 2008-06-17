@@ -366,11 +366,19 @@ class ChangePassword(webapp.RequestHandler):
         path = os.path.join(os.path.dirname(__file__),'submit_success.html')
         self.response.out.write(template.render(path,template_values))
 
+class About(webapp.RequestHandler):
+	def get(self):
+		template_values = {
+		'admin':True if users.is_current_user_admin() else False
+		}
+		path = os.path.join(os.path.dirname(__file__),'about.html')
+		self.response.out.write(template.render(path,template_values))
 
 
 def main():
     application = webapp.WSGIApplication([('/', MainPage),
                                         ('/pay', Pay),
+										('/about',About),
                                         ('/createuser',CreateUser),
                                         ('/viewuserhistory',ViewUserHistory),
                                         ('/changepassword',ChangePassword),
