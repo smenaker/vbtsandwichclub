@@ -34,3 +34,9 @@ indexes:
   properties:
   - name: date
     direction: desc
+
+# Used 4 times in query history.
+- kind: User
+  properties:
+  - name: username
+    direction: desc

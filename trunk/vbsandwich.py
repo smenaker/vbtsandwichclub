@@ -193,7 +193,7 @@ class ManageUsers(webapp.RequestHandler):
     def get(self):
         current_user = users.get_current_user()
         if current_user and users.is_current_user_admin():
-            userquery = User.all()
+            userquery = User.all().order('username')
             template_values = {
             'users':userquery,
             'admin':True if users.is_current_user_admin() else False
