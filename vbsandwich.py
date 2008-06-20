@@ -35,6 +35,7 @@ class MainPage(webapp.RequestHandler):
         self.response.out.write(template.render(path, PrepTemplate(self)))
 
 class CreateUser(webapp.RequestHandler):
+    """Called from the admin console to create a user"""
     def post(self):
         username = self.request.get('username')
         match = User.gql("WHERE username=:1 LIMIT 1",username)
@@ -57,7 +58,8 @@ class CreateUser(webapp.RequestHandler):
             self.response.out.write(template.render(path,PrepTemplate(self,template_values)))
 
 class History(webapp.RequestHandler):
-
+    """Called from the sidebar for all users to view their own histories.
+    Password protected"""
     def get(self):
         path = os.path.join(os.path.dirname(__file__), 'getuserhistory.html') 
         self.response.out.write(template.render(path, PrepTemplate(self)))
@@ -73,7 +75,7 @@ class History(webapp.RequestHandler):
             DisplayUserHistory(self,matchingusers[0])
 
 class Pay(webapp.RequestHandler):
-
+    """Called from the index for paying meals"""
     def post(self):
         try:
             payment = float(self.request.get('payment'))
@@ -100,7 +102,7 @@ class Pay(webapp.RequestHandler):
             self.redirect('error/float')
 
 class ManageUsers(webapp.RequestHandler):
-    """Find a user to edit"""
+    """Main page of the admin console"""
     def get(self):
         current_user = users.get_current_user()
         if current_user and users.is_current_user_admin():
@@ -128,6 +130,7 @@ class ManageUsers(webapp.RequestHandler):
             self.redirect('error/usernotexists')
 
 class Deposit(webapp.RequestHandler):
+    """Called from the admin page to deposit money into an account"""
     def post(self):
         if users.is_current_user_admin():
             username = self.request.get('username')
