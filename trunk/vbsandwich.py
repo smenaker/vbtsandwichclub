@@ -28,6 +28,8 @@ class Item(db.Model):
     category = db.StringProperty()
     price = db.FloatProperty()
 
+fetch_matching_users = User.gql("WHERE username=:1",'rebind')
+
 class MainPage(webapp.RequestHandler):
     """Main Page View"""
     def get(self):
@@ -38,9 +40,10 @@ class CreateUser(webapp.RequestHandler):
     """Called from the admin console to create a user"""
     def post(self):
         username = self.request.get('username')
-        match = User.gql("WHERE username=:1 LIMIT 1",username)
+        global fetch_matching_users
+        fetch_matching_users.bind(username)
         usermatch = None
-        for user in match:
+        for user in fetch_matching_users:
             usermatch = user
         if usermatch:
             self.redirect('error/userexists')
@@ -66,13 +69,14 @@ class History(webapp.RequestHandler):
     def post(self):
         username = self.request.get('username')
         password = self.request.get('password')
-        matchingusers = User.gql("WHERE username=:1",username)
-        if matchingusers.count() == 0:
+        global fetch_matching_users
+        fetch_matching_users.bind(username)
+        if fetch_matching_users.count() == 0:
             self.redirect('error/usernotexists') 
-        elif password != matchingusers[0].password:
+        elif password != fetch_matching_users[0].password:
             self.redirect('error/password') 
         else:
-            DisplayUserHistory(self,matchingusers[0])
+            DisplayUserHistory(self,fetch_matching_users[0])
 
 class Pay(webapp.RequestHandler):
     """Called from the index for paying meals"""
@@ -80,24 +84,25 @@ class Pay(webapp.RequestHandler):
         try:
             payment = float(self.request.get('payment'))
             username = self.request.get('username')
-            matchingusers = User.gql("WHERE username=:1",username)
+            global fetch_matching_users
+            fetch_matching_users.bind(username)
             password = self.request.get('password')
             if payment < 0:
                 self.redirect('error/negative')
                 return
-            elif matchingusers.count() == 0:
+            elif fetch_matching_users.count() == 0:
                 self.redirect('error/usernotexists')
                 return
-            elif password != matchingusers[0].password:
+            elif password != fetch_matching_users[0].password:
                 self.redirect('error/password')
                 return
             newtransaction = Transaction(buyer=username,other=payment,total=-payment)
             if payment:
                 newtransaction.put()
-                for user in matchingusers:
+                for user in fetch_matching_users:
                     user.monies -= payment
                     user.put()
-            DisplayUserHistory(self,matchingusers[0])
+            DisplayUserHistory(self,fetch_matching_users[0])
         except ValueError:
             self.redirect('error/float')
 
@@ -116,9 +121,10 @@ class ManageUsers(webapp.RequestHandler):
             self.redirect('/')
     def post(self):
         username = self.request.get('username')
-        match = User.gql("WHERE username=:1 LIMIT 1",username)
+        global fetch_matching_users
+        fetch_matching_users.bind(username)
         usermatch = None
-        for user in match:
+        for user in fetch_matching_users:
             usermatch = user
         if usermatch:
             template_values = {
@@ -134,8 +140,9 @@ class Deposit(webapp.RequestHandler):
     def post(self):
         if users.is_current_user_admin():
             username = self.request.get('username')
-            matching = User.gql("WHERE username=:1",username)
-            firstmatch = matching[0]
+            global fetch_matching_users
+            fetch_matching_users.bind(username)
+            firstmatch = fetch_matching_users[0]
             try:
                 deposit = float(self.request.get('addamount'))
             except ValueError:
@@ -190,11 +197,12 @@ class EditUser(webapp.RequestHandler):
 class ViewUserHistory(webapp.RequestHandler):
     def post(self):
         username = self.request.get('username')
-        matchingusers = User.gql("WHERE username=:1",username)
-        if matchingusers.count() == 0:
+        global fetch_matching_users
+        fetch_matching_users.bind(username)
+        if fetch_matching_users.count() == 0:
             self.redirect('error/usernotexists')
         else:
-            DisplayUserHistory(self,matchingusers[0])
+            DisplayUserHistory(self,fetch_matching_users[0])
 
 class ChangePassword(webapp.RequestHandler):
     def get(self): 
@@ -206,12 +214,13 @@ class ChangePassword(webapp.RequestHandler):
         newpassword1 = self.request.get('newpassword1')
         newpassword2 = self.request.get('newpassword2')
 
-        matchingusers = User.gql("WHERE username=:1 LIMIT 1",username)
-        if matchingusers.count() == 0:
+        global fetch_matching_users
+        fetch_matching_users.bind(username)
+        if fetch_matching_users.count() == 0:
             self.redirect('error/usernotexists')
             return
         user = None
-        for u in matchingusers:
+        for u in fetch_matching_users:
             user = u
         if oldpassword != user.password:
             self.redirect('error/password')
@@ -298,3 +307,5 @@ def main():
                                         ('/edituser',EditUser)],
                                         debug=True)
     wsgiref.handlers.CGIHandler().run(application)
+if __name__ == "__main__":
+    main()
