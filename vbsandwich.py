@@ -231,6 +231,10 @@ class About(webapp.RequestHandler):
     def get(self):
         path = os.path.join(os.path.dirname(__file__),'about.html')
         self.response.out.write(template.render(path,PrepTemplate(self)))
+class Development(webapp.RequestHandler):
+    def get(self):
+        path = os.path.join(os.path.dirname(__file__),'development.html')
+        self.response.out.write(template.render(path,PrepTemplate(self)))
 class Error(webapp.RequestHandler):
     def get(self,error):
         if error == 'password':
@@ -284,6 +288,7 @@ def main():
                                         ('/pay', Pay),
                                         ('/about',About),
                                         ('/createuser',CreateUser),
+                                        ('/development',Development),
                                         ('/viewuserhistory',ViewUserHistory),
                                         ('/changepassword',ChangePassword),
                                         (r'/error/(.*)',Error),
