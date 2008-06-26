@@ -4,7 +4,7 @@
   <form action="/edituser" method="post">
 	  <div>Username   :<input type=text name="username" value={{ user.username }} readonly> </div> 
 	  <div>Full Name  :<input type="text" name="fullname" value="{{ user.fullname }}" size=15/></div>
-	  <div>Password   :<input type="password" name="password" value={{ user.password }} size=15/></div>
+	  <div>Password   :<input type="password" name="password" value="{{ user.password }}" size=15/></div>
       <div>Set Amount :<input type="text" name="setamount" value={{ user.monies }} size=15/></div>
 	  <div>Remove User:<input type="checkbox" name="remove"></div>
 	  <br>
