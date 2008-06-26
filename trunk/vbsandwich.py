@@ -4,11 +4,14 @@
 import decimal
 import wsgiref.handlers
 import os
+import datetime
 
 from google.appengine.api import users
+from google.appengine.api import mail
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from google.appengine.ext.webapp import template
+
 
 class User(db.Model):
     username = db.StringProperty(required=True)
@@ -28,7 +31,13 @@ class Item(db.Model):
     category = db.StringProperty()
     price = db.FloatProperty()
 
+class Backup(db.Model):
+    account = db.StringProperty(required=True)
+    date = db.DateTimeProperty(auto_now_add=True)
+
 fetch_matching_users = User.gql("WHERE username=:1",'rebind')
+
+fetch_backup_info = Backup.gql("WHERE account=:1 ORDER BY date DESC",'voicebox')
 
 class MainPage(webapp.RequestHandler):
     """Main Page View"""
@@ -109,8 +118,15 @@ class Pay(webapp.RequestHandler):
 class ManageUsers(webapp.RequestHandler):
     """Main page of the admin console"""
     def get(self):
-        current_user = users.get_current_user()
-        if current_user and users.is_current_user_admin():
+        global fetch_backup_info
+        if fetch_backup_info.count() == 0:
+            CreateBackup()
+        else:
+            timediff = datetime.datetime.now() - fetch_backup_info[0].date
+            if timediff.days > 0:
+                CreateBackup()
+
+        if users.is_current_user_admin():
             userquery = User.all().order('username')
             template_values = {
             'users':userquery
@@ -291,6 +307,21 @@ def DisplayUserHistory(request_handler,user):
     }
     path = os.path.join(os.path.dirname(__file__), 'history.html')
     request_handler.response.out.write(template.render(path, PrepTemplate(request_handler,template_values)))
+
+def CreateBackup():
+    global fetch_backup_info
+    for backup in fetch_backup_info:
+        backup.delete()
+    newbackup = Backup(account='voicebox')
+    newbackup.put()
+
+    sender_address = 'voiceboxsandwichclub@gmail.com'
+    user_address = 'tylers@voicebox.com'
+    subject = 'Latest Sandwich Club Data'
+    body = ''
+    for user in User.all():
+        body += '%s\t%s\t%f\n'%(user.username,user.fullname,user.monies)
+    mail.send_mail(sender_address,user_address,subject,body)
 
 def main():
     application = webapp.WSGIApplication([('/', MainPage),
