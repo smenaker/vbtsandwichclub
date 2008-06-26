@@ -319,7 +319,7 @@ def CreateBackup():
     user_address = 'tylers@voicebox.com'
     subject = 'Latest Sandwich Club Data'
     body = ''
-    for user in User.all():
+    for user in User.all().order('username'):
         body += '%s\t%s\t%f\n'%(user.username,user.fullname,user.monies)
     mail.send_mail(sender_address,user_address,subject,body)
 
