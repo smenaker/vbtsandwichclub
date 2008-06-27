@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block sideBarContent %}
-<H3>History for {{ username }}</H3>
+{% if redirect %}
+<H3>Redirecting to main page in 5 seconds</H3>
+{% endif %}
+<H3><b>History for {{ username }}</b></H3>
 <div>Account balance: {{ balance }}</div>
 <br>
 <table border="0" cellspacing="10">
