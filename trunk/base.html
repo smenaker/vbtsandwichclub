@@ -2,7 +2,10 @@
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-<link type="text/css" rel="stylesheet" href="/stylesheets/style.css" />
+	<link type="text/css" rel="stylesheet" href="/stylesheets/style.css" />
+	{% if redirect %}
+	<meta http-equiv="refresh" content="5;url=/">
+	{% endif %}
        </head>
        <div id="wrapper">
        <div id="branding">
@@ -21,7 +24,6 @@
   <a href="{{ url }}">{{ url_linktext }} (for admin purposes only)</a>
   {% endif %}
   <ul><a href="mailto:kevinl@voicebox.com" title="Author">Report Bugs</a></ul>
-  <ul><a href="mailto:tylers@voicebox.com" title="Kenny G">Request Smooth Jazz</a></ul>
   {% if admin %}
   <ul>Admin Stuff</ul>
   <ul><a href="/manageusers" title="users">Manage Users</a></ul>
