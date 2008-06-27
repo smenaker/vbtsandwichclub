@@ -171,7 +171,7 @@ class Deposit(webapp.RequestHandler):
             firstmatch.put()
             newdeposit = Transaction(buyer=username,total=deposit)
             newdeposit.put()
-            DisplayUserHistory(self,firstmatch)
+            DisplayUserHistory(self,firstmatch,False)
             return
         else:
             self.redirect('/')
@@ -218,7 +218,7 @@ class ViewUserHistory(webapp.RequestHandler):
         if fetch_matching_users.count() == 0:
             self.redirect('error/usernotexists')
         else:
-            DisplayUserHistory(self,fetch_matching_users[0])
+            DisplayUserHistory(self,fetch_matching_users[0],False)
 
 class ChangePassword(webapp.RequestHandler):
     def get(self): 
@@ -298,12 +298,13 @@ def PrepTemplate(request_handler,template_values={}):
     template_values['admin'] = admin
     return template_values
 
-def DisplayUserHistory(request_handler,user):
+def DisplayUserHistory(request_handler,user,auto_redirect=True):
     transactions = Transaction.gql("WHERE buyer=:1 ORDER BY date DESC",user.username)
     template_values = {
     'username':user.username,
     'balance':user.monies,
-    'transactions':transactions
+    'transactions':transactions,
+	'redirect':auto_redirect,
     }
     path = os.path.join(os.path.dirname(__file__), 'history.html')
     request_handler.response.out.write(template.render(path, PrepTemplate(request_handler,template_values)))
