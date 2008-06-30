@@ -70,22 +70,23 @@ class CreateUser(webapp.RequestHandler):
             self.response.out.write(template.render(path,PrepTemplate(self,template_values)))
 
 class History(webapp.RequestHandler):
-    """Called from the sidebar for all users to view their own histories.
-    Password protected"""
+    """Encapsulates logic to view transaction history from admin or user view"""
     def get(self):
         path = os.path.join(os.path.dirname(__file__), 'getuserhistory.html') 
         self.response.out.write(template.render(path, PrepTemplate(self)))
     def post(self):
         username = self.request.get('username')
-        password = self.request.get('password')
+        admin = users.is_current_user_admin()
+        if not admin:
+            password = self.request.get('password')
         global fetch_matching_users
         fetch_matching_users.bind(username)
         if fetch_matching_users.count() == 0:
             self.redirect('error/usernotexists') 
-        elif password != fetch_matching_users[0].password:
+        elif not admin and password != fetch_matching_users[0].password:
             self.redirect('error/password') 
         else:
-            DisplayUserHistory(self,fetch_matching_users[0])
+            DisplayUserHistory(self,fetch_matching_users[0], False)
 
 class Pay(webapp.RequestHandler):
     """Called from the index for paying meals"""
@@ -178,7 +179,7 @@ class Deposit(webapp.RequestHandler):
 
 
 class EditUser(webapp.RequestHandler):
-    """Edit a user"""
+    """Handles the admin function to edit a user"""
     def post(self):
         current_user = users.get_current_user()
         if current_user and users.is_current_user_admin():
@@ -210,17 +211,8 @@ class EditUser(webapp.RequestHandler):
         else:
             self.redirect('/')
 
-class ViewUserHistory(webapp.RequestHandler):
-    def post(self):
-        username = self.request.get('username')
-        global fetch_matching_users
-        fetch_matching_users.bind(username)
-        if fetch_matching_users.count() == 0:
-            self.redirect('error/usernotexists')
-        else:
-            DisplayUserHistory(self,fetch_matching_users[0],False)
-
 class ChangePassword(webapp.RequestHandler):
+    """Handles password changing functionality"""
     def get(self): 
         path = os.path.join(os.path.dirname(__file__),'changepassword.html')
         self.response.out.write(template.render(path,PrepTemplate(self)))
@@ -252,15 +244,20 @@ class ChangePassword(webapp.RequestHandler):
         path = os.path.join(os.path.dirname(__file__),'submit_success.html')
         self.response.out.write(template.render(path,PrepTemplate(self,template_values)))
 
-class About(webapp.RequestHandler):
-    def get(self):
-        path = os.path.join(os.path.dirname(__file__),'about.html')
-        self.response.out.write(template.render(path,PrepTemplate(self)))
-class Development(webapp.RequestHandler):
-    def get(self):
-        path = os.path.join(os.path.dirname(__file__),'development.html')
+class Static(webapp.RequestHandler):
+    """Handles static page requests"""
+    def get(self,request):
+        if request == 'about':
+            page = 'about.html'
+        elif request == 'development':
+            page = 'development.html'
+        else:
+            self.redirect('/error/nopage')
+            return
+        path = os.path.join(os.path.dirname(__file__),page)
         self.response.out.write(template.render(path,PrepTemplate(self)))
 class Error(webapp.RequestHandler):
+    """Handles error messages"""
     def get(self,error):
         if error == 'password':
             message = 'Incorrect password'
@@ -274,6 +271,8 @@ class Error(webapp.RequestHandler):
             message = 'This username does not exist yet'
         elif error == 'userexists':
             message = 'This username already exists'
+        elif error == 'nopage':
+            message = 'This static page does not exist'
         else:
             message = 'UNDEFINED ERROR. POSSIBLY RELATED TO SMOOTH JAZZ.'
         template_values = {
@@ -283,6 +282,10 @@ class Error(webapp.RequestHandler):
         self.response.out.write(template.render(path,PrepTemplate(self,template_values)))
 
 def PrepTemplate(request_handler,template_values={}):
+    """Called on a set of template values to append to it information
+    about whether or not the user is logged in, and whether or not the
+    user is an admin so that the appropriate sidebar items are displayed
+    properly."""
     user = users.get_current_user()
     admin = False
     if users.get_current_user():
@@ -299,17 +302,23 @@ def PrepTemplate(request_handler,template_values={}):
     return template_values
 
 def DisplayUserHistory(request_handler,user,auto_redirect=True):
+    """This function is called from a webapp.RequestHandler function, 
+    which passes itself, a db.Model User and a flag indicating whether
+    the page should redirect itself to the main page"""
     transactions = Transaction.gql("WHERE buyer=:1 ORDER BY date DESC",user.username)
     template_values = {
     'username':user.username,
     'balance':user.monies,
     'transactions':transactions,
-	'redirect':auto_redirect,
+    'redirect':auto_redirect,
     }
     path = os.path.join(os.path.dirname(__file__), 'history.html')
     request_handler.response.out.write(template.render(path, PrepTemplate(request_handler,template_values)))
 
 def CreateBackup():
+    """Generates a backup email containing all usernames, fullnames, and balances
+    (no passwords) to Tyler Sellon. A copy of the email exists in the sender
+    email voiceboxsandwichclub@gmail.com."""
     global fetch_backup_info
     for backup in fetch_backup_info:
         backup.delete()
@@ -325,18 +334,19 @@ def CreateBackup():
     mail.send_mail(sender_address,user_address,subject,body)
 
 def main():
-    application = webapp.WSGIApplication([('/', MainPage),
-                                        ('/pay', Pay),
-                                        ('/about',About),
-                                        ('/createuser',CreateUser),
-                                        ('/development',Development),
-                                        ('/viewuserhistory',ViewUserHistory),
+    """Redirects page requests to the appropriate webapp.RequestHandler"""
+    application = webapp.WSGIApplication([
+                                        ('/', MainPage),
                                         ('/changepassword',ChangePassword),
-                                        (r'/error/(.*)',Error),
-                                        ('/history', History),
+                                        ('/createuser',CreateUser),
                                         ('/deposit',Deposit),
+                                        ('/edituser',EditUser),
+                                        ('/error/(.*)',Error),
+                                        ('/history', History),
                                         ('/manageusers',ManageUsers),
-                                        ('/edituser',EditUser)],
+                                        ('/pay', Pay),
+                                        ('/static/(.*)',Static),
+                                        ],
                                         debug=True)
     wsgiref.handlers.CGIHandler().run(application)
 if __name__ == "__main__":
