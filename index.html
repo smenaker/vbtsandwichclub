@@ -1,11 +1,10 @@
 {% extends "base.html" %}
 {% block sideBarContent %}
-<H2><b>Pay for your meal</b></H2>
+<H3><b>Pay for your meal</b></H3>
   <form action="/pay" method="post">
 	  <div>Username:<input type="text" name="username" size=20/></div>
 	  <div>Password:<input type="password" name="password" size=20/></div>
       <div>Payment :<input type="text" name="payment" size=20/> (in dollars)</div>
-	  <br>
 	  <div><input type="submit" value="Pay"></div>
   </form>
 {% endblock %}

@@ -1,16 +1,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
+	<head>
+	<title>Sandwich Club</title>
 	<link type="text/css" rel="stylesheet" href="/stylesheets/style.css" />
 	{% if redirect %}
 	<meta http-equiv="refresh" content="5;url=/">
 	{% endif %}
-       </head>
-       <div id="wrapper">
-       <div id="branding">
-       <H1>Sandwich Club</H1>
-  </div></div>
+    </head>
+    <div id="wrapper">
+		<div id="branding">
+		<H1>Sandwich Club</H1>
+	</div></div>
   <body>
   <div id="divider"></div>
   <div id="navContent">
@@ -21,7 +22,7 @@
   <ul><a href="/history" title="history">Transaction History</a></ul>
   <ul><a href="/changepassword" title="changepassword">Change Password</a></ul>
   {% if url %}
-  <a href="{{ url }}">{{ url_linktext }} (for admin purposes only)</a>
+  <a href="{{ url }}">{{ url_linktext }} </a>
   {% endif %}
   <ul><a href="mailto:kevinl@voicebox.com" title="Author">Suggestions or Bugs</a></ul>
   {% if admin %}
@@ -37,11 +38,9 @@
 	{%  endblock %}
 </div>
 	<div id="sideBarContent">
-	<H2>Prices</H2>
-	<br>
 	<table width="100%"border="0" cellspacing="0" cellpadding="5">
 		<tr>
-			<td>
+			<td valign="top" align="left">
 				<b>Snacks</b>
 				<table width="100%" border="0" cellspacing="5">
 				<tr>
@@ -92,17 +91,9 @@
 					<td> 1 Kudos : </td>
 					<td> $0.25 </td>
 				</tr>
-				<tr>
-					<td> Eggs : </td>
-					<td> Free </td>
-				</tr>
-				<tr>
-					<td> Veggie Dip : </td>
-					<td> Free </td>
-				</tr>
 				</table>
 			</td>
-			<td>
+			<td valign="top" align="left">
 				<b>Fruit</b>
 				<table width="100%" border="0" cellspacing="5">
 				<tr>
@@ -155,46 +146,7 @@
 				</tr>
 				</table>
 			</td>
-		</tr>
-		<tr>
-			<td>
-				<b>Breakfast</b>
-				<table width="100%" border="0" cellspacing="5">
-				<tr>
-					<td> 1 Bowl of Cereal : </td>
-					<td> $0.25 </td>
-				</tr>
-				<tr>
-					<td> 1 Croissant : </td>
-					<td> $0.50 </td>
-				</tr>
-				<tr>
-					<td> 1 Muffin : </td>
-					<td> $0.50 </td>
-				</tr>
-				<tr>
-					<td> 1 English Muffin : </td>
-					<td> $0.25 </td>
-				</tr>
-				<tr>
-					<td> 2 Waffles : </td>
-					<td> $0.25 </td>
-				</tr>
-				<tr>
-					<td> 1 Bagel w/ Cream Cheese: </td>
-					<td> $0.50 </td>
-				</tr>
-				<tr>
-					<td> 1 Biscotti : </td>
-					<td> $0.25 </td>
-				</tr>
-				<tr>
-					<td> 1 cup of Tea: </td>
-					<td> $0.50 </td>
-				</tr>
-				</table>
-			</td>
-			<td>
+			<td valign="top" align="left">
 				<b>Lunch</b>
 				<table width="100%" border="0" cellspacing="5">
 				<tr>
@@ -233,11 +185,56 @@
 					<td> 1 Full Salad: </td>
 					<td> $1.00 </td>
 				</tr>
+				<tr>
+					<td> Veggie Dip </td>
+					<td> Free </td>
+				</tr>
 				</table>
 			</td>
 		</tr>
 		<tr>
-			<td>
+			<td valign="top" align="left">
+				<b>Breakfast</b>
+				<table width="100%" border="0" cellspacing="5">
+				<tr>
+					<td> 1 Bowl of Cereal : </td>
+					<td> $0.25 </td>
+				</tr>
+				<tr>
+					<td> 1 Croissant : </td>
+					<td> $0.50 </td>
+				</tr>
+				<tr>
+					<td> 1 Muffin : </td>
+					<td> $0.50 </td>
+				</tr>
+				<tr>
+					<td> 1 English Muffin : </td>
+					<td> $0.25 </td>
+				</tr>
+				<tr>
+					<td> 2 Waffles : </td>
+					<td> $0.25 </td>
+				</tr>
+				<tr>
+					<td> 1 Bagel w/ Cream Cheese: </td>
+					<td> $0.50 </td>
+				</tr>
+				<tr>
+					<td> 1 Biscotti : </td>
+					<td> $0.25 </td>
+				</tr>
+				<tr>
+					<td> 1 cup of Tea: </td>
+					<td> $0.50 </td>
+				</tr>
+				<tr>
+					<td> Eggs : </td>
+					<td> Free </td>
+				</tr>
+				</table>
+			</td>
+			<td valign="top" align="left">
 				<b>Frozen Food</b>
 				<table width="100%" border="0" cellspacing="5">
 				<tr>
