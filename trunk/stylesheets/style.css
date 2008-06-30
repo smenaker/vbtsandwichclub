@@ -48,7 +48,7 @@ h1, h2, p {
 }
 
 #mainContent {
-	width: 50%;
+	width: 70%;
   background-color:#F8F8FF;
   padding: 1%;
   float: left;
@@ -56,7 +56,7 @@ h1, h2, p {
 }
 
 #navContent {
-	width: 45%;
+	width: 25%;
   background-color:#F8F8FF;
   padding: 1%;
   float: right;
@@ -80,7 +80,7 @@ h1, h2, p {
   float: right;
 }
 #sideBarContent {
-  width: 90%;
+  width: 95%;
   background-color:#67A9DE;
   padding: 1%;
   float: left;
@@ -89,7 +89,7 @@ h1, h2, p {
 }
 
 #sideBarContentRight {
-  width: 90%;
+  width: 95%;
   background-color:#67A9DE;
   padding: 1%;
   float: right;

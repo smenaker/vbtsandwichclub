@@ -295,7 +295,7 @@ def PrepTemplate(request_handler,template_values={}):
             admin = True
     else:
         url = users.create_login_url(request_handler.request.uri)
-        url_linktext = 'Login'
+        url_linktext = 'Admin Login'
     template_values['url'] = url
     template_values['url_linktext'] = url_linktext
     template_values['admin'] = admin
