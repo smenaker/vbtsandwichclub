@@ -48,7 +48,7 @@ class MainPage(webapp.RequestHandler):
 class CreateUser(webapp.RequestHandler):
     """Called from the admin console to create a user"""
     def post(self):
-        username = self.request.get('username')
+        username = self.request.get('username').strip()
         global fetch_matching_users
         fetch_matching_users.bind(username)
         usermatch = None
@@ -75,7 +75,7 @@ class History(webapp.RequestHandler):
         path = os.path.join(os.path.dirname(__file__), 'getuserhistory.html') 
         self.response.out.write(template.render(path, PrepTemplate(self)))
     def post(self):
-        username = self.request.get('username')
+        username = self.request.get('username').strip()
         admin = users.is_current_user_admin()
         if not admin:
             password = self.request.get('password')
@@ -93,7 +93,7 @@ class Pay(webapp.RequestHandler):
     def post(self):
         try:
             payment = float(self.request.get('payment'))
-            username = self.request.get('username')
+            username = self.request.get('username').strip()
             global fetch_matching_users
             fetch_matching_users.bind(username)
             password = self.request.get('password')
@@ -137,7 +137,7 @@ class ManageUsers(webapp.RequestHandler):
         else:
             self.redirect('/')
     def post(self):
-        username = self.request.get('username')
+        username = self.request.get('username').strip()
         global fetch_matching_users
         fetch_matching_users.bind(username)
         usermatch = None
@@ -156,7 +156,7 @@ class Deposit(webapp.RequestHandler):
     """Called from the admin page to deposit money into an account"""
     def post(self):
         if users.is_current_user_admin():
-            username = self.request.get('username')
+            username = self.request.get('username').strip()
             global fetch_matching_users
             fetch_matching_users.bind(username)
             firstmatch = fetch_matching_users[0]
@@ -184,7 +184,7 @@ class EditUser(webapp.RequestHandler):
         current_user = users.get_current_user()
         if current_user and users.is_current_user_admin():
             remove = self.request.get('remove')
-            username = self.request.get('username')
+            username = self.request.get('username').strip()
             matching = User.gql("WHERE username=:1",username)
             firstmatch = matching[0]
             if remove:  
@@ -217,7 +217,7 @@ class ChangePassword(webapp.RequestHandler):
         path = os.path.join(os.path.dirname(__file__),'changepassword.html')
         self.response.out.write(template.render(path,PrepTemplate(self)))
     def post(self):
-        username = self.request.get('username')
+        username = self.request.get('username').strip()
         oldpassword = self.request.get('oldpassword')
         newpassword1 = self.request.get('newpassword1')
         newpassword2 = self.request.get('newpassword2')
