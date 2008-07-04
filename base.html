@@ -19,8 +19,9 @@
   <H2>
   <ul><a href="/" title="Home">Home</a></ul>
   <ul><a href="/static/about" title="about">About</a></ul>
-  <ul><a href="/history" title="history">Transaction History</a></ul>
-  <ul><a href="/changepassword" title="changepassword">Change Password</a></ul>
+  <ul><a href="/static/getuserhistory" title="history">Transaction History</a></ul>
+  <!--<ul><a href="/static/receipt" title="Receipt">Receipt Settings</a></ul>-->
+  <!--<ul><a href="/changepassword" title="changepassword">Change Password</a></ul>-->
   {% if url %}
   <a href="{{ url }}">{{ url_linktext }} </a>
   {% endif %}
@@ -164,6 +165,10 @@
 				<tr>
 					<td> 1 Can of Soup </td>
 					<td> $1.00 </td>
+				</tr>
+				<tr>
+					<td> 1 Can of Tuna </td>
+					<td> $0.50 </td>
 				</tr>
 				<tr>
 					<td> 1 Full Salad </td>
