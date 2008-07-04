@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block sideBarContent %}
+  <H3>Subscribe to Receive Receipts</H3>
+  <form action="/subscribe" method="post">
+	  <div>Username   :<input type=text name="username" value={{ username }} readonly> </div> 
+	  <div>Subscribe to Receipts:<input type="checkbox" value="check" name="receipt" {%if receipt%}checked{%endif%}></div>
+	  <br>
+	  <div><input type="submit" value="Update"></div>
+  </form>
+{% endblock %}
