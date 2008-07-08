@@ -4,6 +4,13 @@
 <H3>Redirecting to main page in 5 seconds</H3>
 {% endif %}
 <H3><b>History for {{ username }}</b></H3>
+{% if reversible %}
+<form action="/reverse" method="post">
+	<input type="hidden" name="username" value= {{ username }} size=15 readonly/>
+  <!--<div>Password:<input type="password" name="password" size=15/></div>-->
+  <div><input type="submit" value="Reverse Last Transaction"></div>
+</form>
+{% endif %}
 <div>Account balance: {{ balance }}</div>
 <br>
 <table border="0" cellspacing="10">
@@ -14,7 +21,7 @@
 	{% for transaction in transactions %}
 	<tr>
 		<td> {{ transaction.date }} </td>
-		<td> ${{ transaction.total }} </td>
+		<td> {{ transaction.total }} </td>
 	</tr>
 	{% endfor %}
 </table>
