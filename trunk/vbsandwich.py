@@ -30,7 +30,7 @@ class Transaction(db.Model):
 class TransactionWrapper():
     def __init__(self,transaction):
         self.date = str(transaction.date.replace(tzinfo=UTC()).astimezone(Pacific_tzinfo()))[:-13]
-        self.total = transaction.total
+        self.total = format_money(transaction.total)
     
 class Item(db.Model):
     name = db.StringProperty(required=True)
@@ -44,6 +44,8 @@ class Backup(db.Model):
 fetch_matching_users = User.gql("WHERE username=:1",'rebind')
 
 fetch_backup_info = Backup.gql("WHERE account=:1 ORDER BY date DESC",'voicebox')
+
+fetch_user_transactions = Transaction.gql("WHERE buyer=:1 ORDER BY date DESC",'rebind')
 
 class MainPage(webapp.RequestHandler):
     """Main Page View"""
@@ -135,8 +137,12 @@ class ManageUsers(webapp.RequestHandler):
 
         if users.is_current_user_admin():
             userquery = User.all().order('username')
+            total = 0
+            for user in userquery:
+                total += user.monies 
             template_values = {
-                    'users':userquery
+                    'users':userquery,
+                    'total':total
                     }
             path = os.path.join(os.path.dirname(__file__), 'manageusers.html')
             self.response.out.write(template.render(path,PrepTemplate(self,template_values)))
@@ -290,6 +296,8 @@ class Error(webapp.RequestHandler):
             message = 'Only non-negative values accepted'
         elif error == 'newpassword':
             message = 'New passwords do not match'
+        elif error == 'oldtransaction':
+            message = 'The transaction you are trying to reverse is more than a day old'
         elif error == 'usernotexists':
             message = 'This username does not exist yet'
         elif error == 'userexists':
@@ -356,7 +364,7 @@ class Subscribe(webapp.RequestHandler):
         receipt = self.request.get('receipt')
         global fetch_matching_users 
         fetch_matching_users.bind(username)
-        if fetch_matching_users.count == 0:
+        if fetch_matching_users.count() == 0:
             self.redirect('error/usernotexists')
             return
         user = fetch_matching_users[0]
@@ -369,6 +377,30 @@ class Subscribe(webapp.RequestHandler):
             self.redirect('success/receiptsubscribed')
         else:
             self.redirect('success/receiptunsubscribed')
+
+class Reverse(webapp.RequestHandler):
+    def post(self):
+        username = self.request.get('username').strip()
+        global fetch_matching_users, fetch_user_transactions
+        fetch_matching_users.bind(username)
+        fetch_user_transactions.bind(username)
+        if fetch_matching_users.count() ==0:
+            self.redirect('error/usernotexists')
+            return
+        user = fetch_matching_users[0]
+        transaction = fetch_user_transactions[0]
+        if fetch_user_transactions.count() != 0:
+            timedelta = datetime.datetime.now() - transaction.date
+            if timedelta.days == 0:
+                user.monies -= transaction.total
+                user.put()
+                transaction.delete()
+                DisplayUserHistory(self,user,False)
+                return
+            else:
+                self.redirect('error/oldtransaction')
+
+
 
 def PrepTemplate(request_handler,template_values={}):
     """Called on a set of template values to append to it information
@@ -394,15 +426,25 @@ def DisplayUserHistory(request_handler,user,auto_redirect=True):
     """This function is called from a webapp.RequestHandler function, 
     which passes itself, a db.Model User and a flag indicating whether
     the page should redirect itself to the main page"""
-    transactions = Transaction.gql("WHERE buyer=:1 ORDER BY date DESC",user.username)
+    global fetch_user_transactions
+    fetch_user_transactions.bind(user.username)
     transactions_wrapped = []
-    for transaction in transactions:
+    for transaction in fetch_user_transactions:
         transactions_wrapped.append(TransactionWrapper(transaction))
+    if fetch_user_transactions.count() != 0:
+        timedelta  = datetime.datetime.now() - fetch_user_transactions[0].date
+        if timedelta.days == 0:
+            reversible = True
+        else:
+            reversible = False
+    else:
+        reversible = False
     template_values = {
             'username':user.username,
             'balance':user.monies,
             'transactions':transactions_wrapped,
             'redirect':auto_redirect,
+            'reversible':reversible,
             }
     path = os.path.join(os.path.dirname(__file__), 'history.html')
     request_handler.response.out.write(template.render(path, PrepTemplate(request_handler,template_values)))
@@ -437,13 +479,19 @@ def SendReceipt(user,transaction):
     sender_address = 'voiceboxsandwichclub@gmail.com'
     user_address = '%s@voicebox.com' % user.username
     subject = 'Sandwich Club %s %s @ %s' % (delta,str(transactiondate),str(transactiontime)[:8])
-    totalsplit = str(transaction.total).split('.')
-    total = '%s.%s' % (totalsplit[0],totalsplit[1][:2].ljust(2,'0'))
-    moniessplit = str(user.monies).split('.')
-    monies = '%s.%s' % (moniessplit[0],moniessplit[1][:2].ljust(2,'0'))
-    body = 'Thank you, %s, for using the Sandwich Club!\nUsername: %s\nTransaction: $%s\nNew Balance: $%s' % (user.fullname,user.username,total,monies)
+    total = format_money(transaction.total)
+    monies = format_money(user.monies)
+    body = 'Thank you, %s, for using the Sandwich Club!\nUsername: %s\nTransaction: %s\nNew Balance: %s' % (user.fullname,user.username,total,monies)
     if user.username != 'voicebox':
         mail.send_mail(sender_address,user_address,subject,body)
+
+def format_money(money):
+    moneysplit = str(money).split('.')
+    money_mat = '%s.%s' % (moneysplit[0],moneysplit[1][:2].ljust(2,'0'))
+    if money_mat.find('-') == -1:
+        return '$%s' % money_mat
+    else:
+        return '-$%s' % money_mat.lstrip('-')
 
 def main():
     """Redirects page requests to the appropriate webapp.RequestHandler"""
@@ -458,6 +506,7 @@ def main():
                                         ('/history', History),
                                         ('/manageusers',ManageUsers),
                                         ('/pay', Pay),
+                                        ('/reverse',Reverse),
                                         ('/static/(.*)',Static),
                                         ('/subscribe',Subscribe),
                                         ('/success/(.*)',Success),
