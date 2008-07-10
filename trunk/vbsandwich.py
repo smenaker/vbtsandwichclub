@@ -47,6 +47,8 @@ fetch_backup_info = Backup.gql("WHERE account=:1 ORDER BY date DESC",'voicebox')
 
 fetch_user_transactions = Transaction.gql("WHERE buyer=:1 ORDER BY date DESC",'rebind')
 
+voicebox_ip = '64.122.170.170'
+
 class MainPage(webapp.RequestHandler):
     """Main Page View"""
     def get(self):
@@ -103,8 +105,14 @@ class Pay(webapp.RequestHandler):
             global fetch_matching_users
             fetch_matching_users.bind(username)
             #password = self.request.get('password')
-            if payment < 0:
+            if str(self.request.remote_addr) != voicebox_ip:
+                self.redirect('error/badip')
+                return
+            elif payment < 0:
                 self.redirect('error/negative')
+                return
+            elif (payment * 100) % 25 > 0:
+                self.redirect('error/increments')
                 return
             elif fetch_matching_users.count() == 0:
                 self.redirect('error/usernotexists')
@@ -290,8 +298,12 @@ class Error(webapp.RequestHandler):
     def get(self,error):
         if error == 'password':
             message = 'Incorrect password'
+        elif error == 'badip':
+            message = 'Sandwich Club is only usable on Voicebox properties.'
         elif error == 'float':
             message = 'Only floating point values accepted'
+        elif error == 'increments':
+            message = 'Payments are only accepted in 25 cent increments'
         elif error == 'negative':
             message = 'Only non-negative values accepted'
         elif error == 'newpassword':
@@ -426,7 +438,9 @@ def DisplayUserHistory(request_handler,user,auto_redirect=True):
     """This function is called from a webapp.RequestHandler function, 
     which passes itself, a db.Model User and a flag indicating whether
     the page should redirect itself to the main page"""
-    global fetch_user_transactions
+    global fetch_user_transactions, voicebox_ip
+    if str(request_handler.request.remote_addr) != voicebox_ip:
+        request_handler.redirect('error/badip')
     fetch_user_transactions.bind(user.username)
     transactions_wrapped = []
     for transaction in fetch_user_transactions:
@@ -468,7 +482,7 @@ def CreateBackup():
     mail.send_mail(sender_address,user_address,subject,body)
 
 def SendReceipt(user,transaction):
-    """Send a receipt to an individual"""
+    """Send a receipt to a user"""
     transactionpst = transaction.date.replace(tzinfo=UTC()).astimezone(Pacific_tzinfo())
     transactiondate = transactionpst.date()
     transactiontime = transactionpst.time()
@@ -486,7 +500,11 @@ def SendReceipt(user,transaction):
         mail.send_mail(sender_address,user_address,subject,body)
 
 def format_money(money):
-    moneysplit = str(money).split('.')
+	"""Formats floating point money values into a more readable $x.xx form."""
+    moneystr = str(money)
+    if moneystr.find('.') == -1:
+        moneystr = '%s.00' % (moneystr)
+    moneysplit = moneystr.split('.')
     money_mat = '%s.%s' % (moneysplit[0],moneysplit[1][:2].ljust(2,'0'))
     if money_mat.find('-') == -1:
         return '$%s' % money_mat
@@ -494,7 +512,7 @@ def format_money(money):
         return '-$%s' % money_mat.lstrip('-')
 
 def main():
-    """Redirects page requests to the appropriate webapp.RequestHandler"""
+    """Redirects page requests to the appropriate RequestHandler"""
     application = webapp.WSGIApplication([
                                         ('/', MainPage),
                                         #('/changepassword',ChangePassword),
