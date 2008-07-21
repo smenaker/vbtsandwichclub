@@ -319,7 +319,8 @@ class Error(webapp.RequestHandler):
         else:
             message = 'UNDEFINED ERROR. POSSIBLY RELATED TO SMOOTH JAZZ.'
         template_values = {
-                'message':message
+                'message':message,
+                'redirect':True,
                 }
         path = os.path.join(os.path.dirname(__file__),'submit_error.html')
         self.response.out.write(template.render(path,PrepTemplate(self,template_values)))
@@ -500,7 +501,7 @@ def SendReceipt(user,transaction):
         mail.send_mail(sender_address,user_address,subject,body)
 
 def format_money(money):
-	"""Formats floating point money values into a more readable $x.xx form."""
+    """Formats floating point money values into a more readable $x.xx form."""
     moneystr = str(money)
     if moneystr.find('.') == -1:
         moneystr = '%s.00' % (moneystr)
