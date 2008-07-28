@@ -10,14 +10,14 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
-# Used 76 times in query history.
+# Used 93 times in query history.
 - kind: Backup
   properties:
   - name: account
   - name: date
     direction: desc
 
-# Used 222 times in query history.
+# Used 357 times in query history.
 - kind: Transaction
   properties:
   - name: buyer

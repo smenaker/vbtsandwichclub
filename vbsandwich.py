@@ -1,5 +1,6 @@
 #!/usr/bin/env python2.5
-#Kevin Le
+
+__author__ = 'Kevin Le'
 
 import decimal
 import wsgiref.handlers
@@ -47,7 +48,9 @@ fetch_backup_info = Backup.gql("WHERE account=:1 ORDER BY date DESC",'voicebox')
 
 fetch_user_transactions = Transaction.gql("WHERE buyer=:1 ORDER BY date DESC",'rebind')
 
-voicebox_ip = '64.122.170.170'
+#voicebox_ip = '64.122.170.170'
+#For testing purposes, comment out the line above and uncomment line below.
+voicebox_ip = '127.0.0.1'
 
 class MainPage(webapp.RequestHandler):
     """Main Page View"""
@@ -61,7 +64,8 @@ class CreateUser(webapp.RequestHandler):
         username = self.request.get('username').strip()
         global fetch_matching_users
         fetch_matching_users.bind(username)
-        usermatch = None
+        # check to see if there are any users with that username already
+		usermatch = None
         for user in fetch_matching_users:
             usermatch = user
         if usermatch:
@@ -85,8 +89,9 @@ class History(webapp.RequestHandler):
     def post(self):
         username = self.request.get('username').strip()
         admin = users.is_current_user_admin()
-        if not admin:
-            password = self.request.get('password')
+        #legacy code for password support
+        #if not admin:
+            #password = self.request.get('password')
         global fetch_matching_users
         fetch_matching_users.bind(username)
         if fetch_matching_users.count() == 0:
@@ -120,6 +125,15 @@ class Pay(webapp.RequestHandler):
             #elif password != fetch_matching_users[0].password:
             #    self.redirect('error/password')
             #    return
+            lasttransaction = GetLastTransaction(fetch_matching_users[0])
+            if lasttransaction:
+                # check for possible overcharge caused by hitting the pay button
+                # multiple times
+                delta = datetime.datetime.now() - lasttransaction.date
+                if delta.seconds < 2:
+                    #TODO(kevinl): print out message notifying possible accidental overcharge.
+                    DisplayUserHistory(fetch_matching_users[0]) 
+                    return
             newtransaction = Transaction(buyer=username,other=payment,total=-payment)
             if payment:
                 newtransaction.put()
@@ -136,14 +150,17 @@ class ManageUsers(webapp.RequestHandler):
     """Main page of the admin console"""
     def get(self):
         global fetch_backup_info
+        # Create a backup if there are no backups
         if fetch_backup_info.count() == 0:
             CreateBackup()
         else:
+            # create a backup if a backup has not been made in less than a day
             timediff = datetime.datetime.now() - fetch_backup_info[0].date
             if timediff.days > 0:
                 CreateBackup()
 
         if users.is_current_user_admin():
+            # Generate a list of all individuals and their balances
             userquery = User.all().order('username')
             total = 0
             for user in userquery:
@@ -310,6 +327,8 @@ class Error(webapp.RequestHandler):
             message = 'New passwords do not match'
         elif error == 'oldtransaction':
             message = 'The transaction you are trying to reverse is more than a day old'
+        elif error == 'transactionnotexists':
+            message = 'No transactions exist for this user.'
         elif error == 'usernotexists':
             message = 'This username does not exist yet'
         elif error == 'userexists':
@@ -349,7 +368,7 @@ class Pacific_tzinfo(datetime.tzinfo):
             return "PDT"
 
 class UTC(datetime.tzinfo):
-    """UTC"""
+    """Implementation of the UTC (GMT) timezone."""
     def utcoffset(self, dt):
         return datetime.timedelta(0)
     def tzname(self, dt):
@@ -358,6 +377,8 @@ class UTC(datetime.tzinfo):
         return datetime.timedelta(0)
 
 class Receipt(webapp.RequestHandler):
+    """Request handler for getting the subscription to receipts
+    info of a user"""
     def post(self):
         username = self.request.get('username').strip()
         global fetch_matching_users
@@ -372,6 +393,8 @@ class Receipt(webapp.RequestHandler):
         path = os.path.join(os.path.dirname(__file__),'subscribe.html')
         self.response.out.write(template.render(path,PrepTemplate(self,template_values)))
 class Subscribe(webapp.RequestHandler):
+    """Request handler for subscribing and unsubscribing to 
+    email receipts"""
     def post(self):
         username = self.request.get('username').strip()
         receipt = self.request.get('receipt')
@@ -392,17 +415,18 @@ class Subscribe(webapp.RequestHandler):
             self.redirect('success/receiptunsubscribed')
 
 class Reverse(webapp.RequestHandler):
+    """Request handler for reversal of transactions."""
     def post(self):
         username = self.request.get('username').strip()
-        global fetch_matching_users, fetch_user_transactions
+        global fetch_matching_users
         fetch_matching_users.bind(username)
-        fetch_user_transactions.bind(username)
-        if fetch_matching_users.count() ==0:
+        if fetch_matching_users.count() == 0:
             self.redirect('error/usernotexists')
             return
         user = fetch_matching_users[0]
-        transaction = fetch_user_transactions[0]
-        if fetch_user_transactions.count() != 0:
+        transaction = GetLastTransaction(user)
+        if transaction:
+            # check to make sure the transaction is less than a day old.
             timedelta = datetime.datetime.now() - transaction.date
             if timedelta.days == 0:
                 user.monies -= transaction.total
@@ -413,13 +437,43 @@ class Reverse(webapp.RequestHandler):
             else:
                 self.redirect('error/oldtransaction')
 
+def GetLastTransaction(user):
+    """Returns the the most recent transaction of a user.
 
-
+    Args:
+        user: a user object (db.Model) whose most recent
+            transaction you are trying to obtain.
+    
+    Returns:
+        a Transaction object, representing the user's latest
+            transaction
+        or
+        None, if the user has no transactions
+        
+    """
+    global fetch_user_transactions
+    fetch_user_transactions.bind(user.username)
+    if fetch_user_transactions.count() != 0:
+        return fetch_user_transactions[0]
+    else:
+        return None
 def PrepTemplate(request_handler,template_values={}):
     """Called on a set of template values to append to it information
     about whether or not the user is logged in, and whether or not the
     user is an admin so that the appropriate sidebar items are displayed
-    properly."""
+    properly.
+    
+    Args:
+        request_handler: A webapp.RequestHandler object which needs the
+            updated template values.
+        template_values: A dictionary with the request handlers own key
+            value pairs defined. If one is not provided, an empty 
+            dictionary is used.
+            
+    Returns:
+        A dictionary whose key value pairs for 'url','url_linktext', and
+        'admin' are set.
+    """
     user = users.get_current_user()
     admin = False
     if users.get_current_user():
@@ -436,16 +490,28 @@ def PrepTemplate(request_handler,template_values={}):
     return template_values
 
 def DisplayUserHistory(request_handler,user,auto_redirect=True):
-    """This function is called from a webapp.RequestHandler function, 
-    which passes itself, a db.Model User and a flag indicating whether
-    the page should redirect itself to the main page"""
+    """Called from request handlers to display a user's history.
+    
+    Args:
+        request_handler: A webapp.RequestHandler object which sends the
+            history display request.
+        user: The user object (db.Model) whose history you are trying to
+            display.
+        auto_redirect: Set this to False if you do not want the history
+            page to autoredirect to home in 5 seconds.
+
+    Returns:
+        None
+    """
     global fetch_user_transactions, voicebox_ip
     if str(request_handler.request.remote_addr) != voicebox_ip:
         request_handler.redirect('error/badip')
     fetch_user_transactions.bind(user.username)
+    # wraps the transactions up in string fields
     transactions_wrapped = []
     for transaction in fetch_user_transactions:
         transactions_wrapped.append(TransactionWrapper(transaction))
+    # check if reversible transactions are available
     if fetch_user_transactions.count() != 0:
         timedelta  = datetime.datetime.now() - fetch_user_transactions[0].date
         if timedelta.days == 0:
@@ -467,7 +533,11 @@ def DisplayUserHistory(request_handler,user,auto_redirect=True):
 def CreateBackup():
     """Generates a backup email containing all usernames, fullnames, and balances
     (no passwords) to Tyler Sellon. A copy of the email exists in the sender
-    email voiceboxsandwichclub@gmail.com."""
+    email voiceboxsandwichclub@gmail.com.
+    
+    Returns:
+        None
+    """
     global fetch_backup_info
     for backup in fetch_backup_info:
         backup.delete()
@@ -478,12 +548,22 @@ def CreateBackup():
     user_address = 'tylers@voicebox.com'
     subject = 'Latest Sandwich Club Data'
     body = ''
+    # Create a list of all the users, their names, and their balances.
     for user in User.all().order('username'):
         body += '%s\t%s\t%f\n'%(user.username,user.fullname,user.monies)
     mail.send_mail(sender_address,user_address,subject,body)
 
 def SendReceipt(user,transaction):
-    """Send a receipt to a user"""
+    """Send a receipt to a user
+    
+    Args:
+        user: A user object (db.Model) who you are going to mail.
+        transaction: A transaction object (db.Model) which you are sending a
+            notification of.
+            
+    Returns: 
+        None
+    """
     transactionpst = transaction.date.replace(tzinfo=UTC()).astimezone(Pacific_tzinfo())
     transactiondate = transactionpst.date()
     transactiontime = transactionpst.time()
@@ -493,20 +573,31 @@ def SendReceipt(user,transaction):
         delta = 'Purchase'
     sender_address = 'voiceboxsandwichclub@gmail.com'
     user_address = '%s@voicebox.com' % user.username
+	# take a substring of the transaction time that excludes microseconds.
     subject = 'Sandwich Club %s %s @ %s' % (delta,str(transactiondate),str(transactiontime)[:8])
     total = format_money(transaction.total)
     monies = format_money(user.monies)
-    body = 'Thank you, %s, for using the Sandwich Club!\nUsername: %s\nTransaction: %s\nNew Balance: %s' % (user.fullname,user.username,total,monies)
+    body = 'Thank you, %s, for using the <a href="http://voicebox-sandwich.appspot.com/">Sandwich Club</a>!\n\nUsername: %s\nTransaction: %s\nNew Balance: %s' % (user.fullname,user.username,total,monies)
     if user.username != 'voicebox':
         mail.send_mail(sender_address,user_address,subject,body)
 
 def format_money(money):
-    """Formats floating point money values into a more readable $x.xx form."""
+    """Formats floating point money values into a more readable $x.xx form.
+    
+    Args:
+        money: A floating point value representing a dollar amount.
+        
+    Returns:
+        A string of the form '$X.XX' or '-$X.XX' depending on the sign.
+    """
     moneystr = str(money)
+    # case where there is no decimal
     if moneystr.find('.') == -1:
         moneystr = '%s.00' % (moneystr)
     moneysplit = moneystr.split('.')
-    money_mat = '%s.%s' % (moneysplit[0],moneysplit[1][:2].ljust(2,'0'))
+    # joins all the digits before the decimal place with 2 digits after the
+    # decimal place by a '.'
+    money_mat = '.'.join([moneysplit[0],moneysplit[1][:2].ljust(2,'0')])
     if money_mat.find('-') == -1:
         return '$%s' % money_mat
     else:
