@@ -48,9 +48,9 @@ fetch_backup_info = Backup.gql("WHERE account=:1 ORDER BY date DESC",'voicebox')
 
 fetch_user_transactions = Transaction.gql("WHERE buyer=:1 ORDER BY date DESC",'rebind')
 
-#voicebox_ip = '64.122.170.170'
-#For testing purposes, comment out the line above and uncomment line below.
-voicebox_ip = '127.0.0.1'
+# Set the ip to localhost in a dev environment to prevent restricted access
+voicebox_ip = '127.0.0.1' if os.environ['SERVER_SOFTWARE'].startswith('Dev') else '64.122.170.170'
+
 
 class MainPage(webapp.RequestHandler):
     """Main Page View"""
@@ -65,7 +65,7 @@ class CreateUser(webapp.RequestHandler):
         global fetch_matching_users
         fetch_matching_users.bind(username)
         # check to see if there are any users with that username already
-		usermatch = None
+        usermatch = None
         for user in fetch_matching_users:
             usermatch = user
         if usermatch:
@@ -573,11 +573,11 @@ def SendReceipt(user,transaction):
         delta = 'Purchase'
     sender_address = 'voiceboxsandwichclub@gmail.com'
     user_address = '%s@voicebox.com' % user.username
-	# take a substring of the transaction time that excludes microseconds.
+    # take a substring of the transaction time that excludes microseconds.
     subject = 'Sandwich Club %s %s @ %s' % (delta,str(transactiondate),str(transactiontime)[:8])
     total = format_money(transaction.total)
     monies = format_money(user.monies)
-    body = 'Thank you, %s, for using the <a href="http://voicebox-sandwich.appspot.com/">Sandwich Club</a>!\n\nUsername: %s\nTransaction: %s\nNew Balance: %s' % (user.fullname,user.username,total,monies)
+    body = 'Thank you, %s, for using the Sandwich Club!\n\nUsername: %s\nTransaction: %s\nNew Balance: %s' % (user.fullname,user.username,total,monies)
     if user.username != 'voicebox':
         mail.send_mail(sender_address,user_address,subject,body)
 
