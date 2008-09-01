@@ -17,7 +17,7 @@ indexes:
   - name: date
     direction: desc
 
-# Used 357 times in query history.
+# Used 372 times in query history.
 - kind: Transaction
   properties:
   - name: buyer
