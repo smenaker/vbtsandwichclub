@@ -48,9 +48,10 @@ fetch_backup_info = Backup.gql("WHERE account=:1 ORDER BY date DESC",'voicebox')
 
 fetch_user_transactions = Transaction.gql("WHERE buyer=:1 ORDER BY date DESC",'rebind')
 
-# Set the ip to localhost in a dev environment to prevent restricted access
-voicebox_ip = '127.0.0.1' if os.environ['SERVER_SOFTWARE'].startswith('Dev') else '64.122.170.170'
-
+voicebox_ip = '64.122.170.170'
+#voicebox_ip = '64.122.170.174'
+#For testing purposes, comment out the line above and uncomment line below.
+#voicebox_ip = '127.0.0.1'
 
 class MainPage(webapp.RequestHandler):
     """Main Page View"""
@@ -132,7 +133,7 @@ class Pay(webapp.RequestHandler):
                 delta = datetime.datetime.now() - lasttransaction.date
                 if delta.seconds < 2:
                     #TODO(kevinl): print out message notifying possible accidental overcharge.
-                    DisplayUserHistory(fetch_matching_users[0]) 
+                    DisplayUserHistory(self, fetch_matching_users[0]) 
                     return
             newtransaction = Transaction(buyer=username,other=payment,total=-payment)
             if payment:
@@ -316,7 +317,7 @@ class Error(webapp.RequestHandler):
         if error == 'password':
             message = 'Incorrect password'
         elif error == 'badip':
-            message = 'Sandwich Club is only usable on Voicebox properties.'
+            message = 'Sandwich Club is only usable on Voicebox properties.' + self.request.remote_addr
         elif error == 'float':
             message = 'Only floating point values accepted'
         elif error == 'increments':
@@ -573,11 +574,11 @@ def SendReceipt(user,transaction):
         delta = 'Purchase'
     sender_address = 'voiceboxsandwichclub@gmail.com'
     user_address = '%s@voicebox.com' % user.username
-    # take a substring of the transaction time that excludes microseconds.
+	# take a substring of the transaction time that excludes microseconds.
     subject = 'Sandwich Club %s %s @ %s' % (delta,str(transactiondate),str(transactiontime)[:8])
     total = format_money(transaction.total)
     monies = format_money(user.monies)
-    body = 'Thank you, %s, for using the Sandwich Club!\n\nUsername: %s\nTransaction: %s\nNew Balance: %s' % (user.fullname,user.username,total,monies)
+    body = 'Thank you, %s, for using the <a href="http://voicebox-sandwich.appspot.com/">Sandwich Club</a>!\n\nUsername: %s\nTransaction: %s\nNew Balance: %s' % (user.fullname,user.username,total,monies)
     if user.username != 'voicebox':
         mail.send_mail(sender_address,user_address,subject,body)
 
