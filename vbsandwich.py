@@ -117,7 +117,7 @@ class Pay(webapp.RequestHandler):
             elif payment < 0:
                 self.redirect('error/negative')
                 return
-            elif (payment * 100) % 25 > 0:
+            elif (payment * 100) % 5 > 0:
                 self.redirect('error/increments')
                 return
             elif fetch_matching_users.count() == 0:
