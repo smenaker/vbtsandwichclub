@@ -1,0 +1,4 @@
+cron:
+- description: daily account report
+  url: /dailyreport
+  schedule: every 24 hours

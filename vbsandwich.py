@@ -12,6 +12,7 @@ from google.appengine.api import mail
 from google.appengine.ext import webapp
 from google.appengine.ext import db
 from google.appengine.ext.webapp import template
+from google.appengine.api.labs.taskqueue import Task
 
 
 class User(db.Model):
@@ -44,15 +45,11 @@ class Backup(db.Model):
 
 fetch_matching_users = User.gql("WHERE username=:1",'rebind')
 
-fetch_backup_info = Backup.gql("WHERE account=:1 ORDER BY date DESC",'voicebox')
-
 fetch_user_transactions = Transaction.gql("WHERE buyer=:1 ORDER BY date DESC",'rebind')
 
-voicebox_ip = '64.122.170.170'
-#voicebox_ip = '64.122.170.174'
-#For testing purposes, comment out the line above and uncomment line below.
-#voicebox_ip = '127.0.0.1'
-
+# Set the ip to localhost in a dev environment to prevent restricted access
+voicebox_ip = '127.0.0.1' if os.environ['SERVER_SOFTWARE'].startswith('Dev') else '64.122.170.170'
+#voicebox_ip = '127.0.0.1' if os.environ['SERVER_SOFTWARE'].startswith('Dev') else '98.201.163.127'
 class MainPage(webapp.RequestHandler):
     """Main Page View"""
     def get(self):
@@ -141,25 +138,18 @@ class Pay(webapp.RequestHandler):
                 for user in fetch_matching_users:
                     user.monies -= payment
                     user.put()
-                    #if user.receipt:
-                    SendReceipt(user,newtransaction)
+                    # add a send-receipt task to the queue
+                    receipt_task = Task(url='/receipt', params = { 'user_key' : user.key(),
+                                                                   'transaction_key' : newtransaction.key() })
+                    receipt_task.add('mail-queue')
             DisplayUserHistory(self,fetch_matching_users[0])
         except ValueError:
             self.redirect('error/float')
 
+
 class ManageUsers(webapp.RequestHandler):
     """Main page of the admin console"""
     def get(self):
-        global fetch_backup_info
-        # Create a backup if there are no backups
-        if fetch_backup_info.count() == 0:
-            CreateBackup()
-        else:
-            # create a backup if a backup has not been made in less than a day
-            timediff = datetime.datetime.now() - fetch_backup_info[0].date
-            if timediff.days > 0:
-                CreateBackup()
-
         if users.is_current_user_admin():
             # Generate a list of all individuals and their balances
             userquery = User.all().order('username')
@@ -210,8 +200,12 @@ class Deposit(webapp.RequestHandler):
             firstmatch.put()
             newdeposit = Transaction(buyer=username,total=deposit)
             newdeposit.put()
-            #if firstmatch.receipt:
-            SendReceipt(firstmatch,newdeposit)
+
+            # add a send-receipt task to the queue
+			receipt_task = Task(url='/receipt', params = { 'user_key' : firstmatch.key(),
+                                                           'transaction_key' : newdeposit.key() })
+            receipt_task.add('mail-queue')
+
             DisplayUserHistory(self,firstmatch,False)
             return
         else:
@@ -377,7 +371,7 @@ class UTC(datetime.tzinfo):
     def dst(self, dt):
         return datetime.timedelta(0)
 
-class Receipt(webapp.RequestHandler):
+class ReceiptStatus(webapp.RequestHandler):
     """Request handler for getting the subscription to receipts
     info of a user"""
     def post(self):
@@ -508,9 +502,10 @@ def DisplayUserHistory(request_handler,user,auto_redirect=True):
     if str(request_handler.request.remote_addr) != voicebox_ip:
         request_handler.redirect('error/badip')
     fetch_user_transactions.bind(user.username)
+    matching_transactions = fetch_user_transactions.fetch(10)
     # wraps the transactions up in string fields
     transactions_wrapped = []
-    for transaction in fetch_user_transactions:
+    for transaction in matching_transactions:
         transactions_wrapped.append(TransactionWrapper(transaction))
     # check if reversible transactions are available
     if fetch_user_transactions.count() != 0:
@@ -530,57 +525,6 @@ def DisplayUserHistory(request_handler,user,auto_redirect=True):
             }
     path = os.path.join(os.path.dirname(__file__), 'history.html')
     request_handler.response.out.write(template.render(path, PrepTemplate(request_handler,template_values)))
-
-def CreateBackup():
-    """Generates a backup email containing all usernames, fullnames, and balances
-    (no passwords) to Tyler Sellon. A copy of the email exists in the sender
-    email voiceboxsandwichclub@gmail.com.
-    
-    Returns:
-        None
-    """
-    global fetch_backup_info
-    for backup in fetch_backup_info:
-        backup.delete()
-    newbackup = Backup(account='voicebox')
-    newbackup.put()
-
-    sender_address = 'voiceboxsandwichclub@gmail.com'
-    user_address = 'tylers@voicebox.com'
-    subject = 'Latest Sandwich Club Data'
-    body = ''
-    # Create a list of all the users, their names, and their balances.
-    for user in User.all().order('username'):
-        body += '%s\t%s\t%f\n'%(user.username,user.fullname,user.monies)
-    mail.send_mail(sender_address,user_address,subject,body)
-
-def SendReceipt(user,transaction):
-    """Send a receipt to a user
-    
-    Args:
-        user: A user object (db.Model) who you are going to mail.
-        transaction: A transaction object (db.Model) which you are sending a
-            notification of.
-            
-    Returns: 
-        None
-    """
-    transactionpst = transaction.date.replace(tzinfo=UTC()).astimezone(Pacific_tzinfo())
-    transactiondate = transactionpst.date()
-    transactiontime = transactionpst.time()
-    if transaction.total > 0:
-        delta = 'Deposit'
-    if transaction.total <= 0:
-        delta = 'Purchase'
-    sender_address = 'voiceboxsandwichclub@gmail.com'
-    user_address = '%s@voicebox.com' % user.username
-	# take a substring of the transaction time that excludes microseconds.
-    subject = 'Sandwich Club %s %s @ %s' % (delta,str(transactiondate),str(transactiontime)[:8])
-    total = format_money(transaction.total)
-    monies = format_money(user.monies)
-    body = 'Thank you, %s, for using the <a href="http://voicebox-sandwich.appspot.com/">Sandwich Club</a>!\n\nUsername: %s\nTransaction: %s\nNew Balance: %s' % (user.fullname,user.username,total,monies)
-    if user.username != 'voicebox':
-        mail.send_mail(sender_address,user_address,subject,body)
 
 def format_money(money):
     """Formats floating point money values into a more readable $x.xx form.
@@ -609,7 +553,7 @@ def main():
     application = webapp.WSGIApplication([
                                         ('/', MainPage),
                                         #('/changepassword',ChangePassword),
-                                        ('/receipt',Receipt),
+                                        ('/receiptstatus',ReceiptStatus),
                                         ('/createuser',CreateUser),
                                         ('/deposit',Deposit),
                                         ('/edituser',EditUser),
