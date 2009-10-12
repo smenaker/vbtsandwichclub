@@ -6,6 +6,14 @@ api_version: 1
 handlers:
 - url: /stylesheets
   static_dir: stylesheets
+  
+- url: /dailyreport
+  script: report.py
+  login: admin
+
+- url: /receipt
+  script: receipt.py
+  login: admin
 
 - url: /.*
   script: vbsandwich.py
