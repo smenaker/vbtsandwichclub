@@ -118,7 +118,7 @@ class Pay(webapp.RequestHandler):
             elif payment < 0:
                 self.redirect('error/negative')
                 return
-            elif (payment * 100) % 5 > 0:
+            elif (int(payment * 100)) % 5 > 0:
                 self.redirect('error/increments')
                 return
             elif fetch_matching_users.count() == 0:
@@ -322,7 +322,7 @@ class Error(webapp.RequestHandler):
         elif error == 'float':
             message = 'Only floating point values accepted'
         elif error == 'increments':
-            message = 'Payments are only accepted in 25 cent increments'
+            message = 'Payments are only accepted in 5 cent increments'
         elif error == 'negative':
             message = 'Only non-negative values accepted'
         elif error == 'newpassword':
