@@ -49,6 +49,7 @@ fetch_backup_info = Backup.gql("WHERE account=:1 ORDER BY date DESC",'voicebox')
 fetch_user_transactions = Transaction.gql("WHERE buyer=:1 ORDER BY date DESC",'rebind')
 
 voicebox_ip = '67.139.99.210'
+voicebox_ip2 = '50.46.123.240'
 #voicebox_ip = '64.122.170.170'
 #voicebox_ip = '64.122.170.174'
 #For testing purposes, comment out the line above and uncomment line below.
@@ -112,7 +113,7 @@ class Pay(webapp.RequestHandler):
             global fetch_matching_users
             fetch_matching_users.bind(username)
             #password = self.request.get('password')
-            if str(self.request.remote_addr) != voicebox_ip:
+            if str(self.request.remote_addr) != voicebox_ip and str(self.request.remote_addr) != voicebox_ip2:
                 self.redirect('error/badip')
                 return
             elif payment < 0:
